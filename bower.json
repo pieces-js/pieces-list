@@ -1,0 +1,22 @@
+{
+  "name": "pieces-list",
+  "version": "0.4.0",
+  "author": "Vlad Dem <palkan>",
+  "license": "MIT",
+  "main": "pieces.list.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "vendor",
+    "test"
+  ],
+  "dependencies": {
+    "pieces": "~> 0.4"
+  },
+  "overrides": {
+    "pieces": {
+      "main": "pieces.require.js"
+    }
+  }
+}
