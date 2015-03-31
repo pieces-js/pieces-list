@@ -3,7 +3,6 @@ node_js:
   - 0.12
 branches:
   except:
-    - master
     - /^cis-.*$/
 before_script:
   - "npm install -g mocha-phantomjs"
