@@ -3,7 +3,7 @@
   "version": "0.4.0",
   "author": "Vlad Dem <palkan>",
   "license": "MIT",
-  "main": "pieces.list.js",
+  "main": "pieces.list.require.js",
   "ignore": [
     "**/.*",
     "node_modules",
@@ -12,11 +12,6 @@
     "test"
   ],
   "dependencies": {
-    "pieces": "~> 0.4"
-  },
-  "overrides": {
-    "pieces": {
-      "main": "pieces.require.js"
-    }
+    "pieces-core": "~> 0.4"
   }
 }

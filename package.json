@@ -2,11 +2,13 @@
   "name": "pieces-list",
   "version": "0.4.0",
   "description": "List component and plugins for Pieces.js",
-  "main": "./app/pi.list.js",
+  "main": "./app/pieces.list.js",
   "scripts": {
     "start": "./node_modules/.bin/brunch watch --server",
     "test": "mocha-phantomjs http://localhost:3334/test/",
-    "browserify": "cd app && browserify --extension .coffee -t coffeeify -e pieces.list.js -o ../pieces.list.js && cd .. && ./node_modules/uglify-js-brunch/node_modules/.bin/uglifyjs -m toplevel pieces.list.js > pieces.list.min.js"
+    "browserify": "cd app && browserify --extension .coffee index.js -o ../pieces.list.js && cd .. && ./node_modules/uglify-js-brunch/node_modules/.bin/uglifyjs -m toplevel pieces.list.js > pieces.list.min.js",
+    "postinstall": "./node_modules/.bin/bower install",
+    "requirify": "./node_modules/.bin/brunch build -P && cp ./public/js/pieces.list.js ./pieces.list.require.min.js && ./node_modules/.bin/brunch build && cp ./public/js/pieces.list.js ./pieces.list.require.js"
   },
   "repository": {
     "type": "git",
@@ -21,7 +23,13 @@
   "bugs": {
     "url": "https://github.com/pieces-js/pieces-list/issues"
   },
+  "browserify": {
+    "transform": [
+      ["coffeeify", {"ext": ".coffee"}] 
+    ]
+  }, 
   "dependencies": {
+    "pieces-core": "~0.4"
   },
   "devDependencies": {
     "brunch": "~1.7",

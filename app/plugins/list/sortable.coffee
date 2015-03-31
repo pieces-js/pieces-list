@@ -1,12 +1,11 @@
 'use strict'
-pi = require 'pi'
-require '../../components/list'
-utils = pi.utils
-# [Plugin]
-#
-#  Add 'sort(field,order)' method to list
+Plugin = require('pieces-core').Plugin
+List = require '../../components/list'
+ListEvent = require '../../components/events/list_events'
+utils = require('pieces-core').utils
 
-class pi.List.Sortable extends pi.Plugin
+# Add 'sort(field,order)' method to list
+class List.Sortable extends Plugin
   id: 'sortable'
   initialize: (@list) ->
     super
@@ -22,8 +21,8 @@ class pi.List.Sortable extends pi.Plugin
       @_compare_fun = (a,b) -> utils.keys_compare a.record, b.record, @_prevs
 
     @list.delegate_to @, 'sort'
-    @list.on pi.ListEvent.Update, ((e) => @item_updated(e.data.item)), @, (e) => ((e.data.type is pi.ListEvent.ItemAdded or e.data.type is pi.ListEvent.ItemUpdated) and e.data.item.host is @list) 
-    @list.on pi.ListEvent.Update, ((e) => @resort()), @, (e) => ((e.data.type is pi.ListEvent.Load) and e.target is @list) 
+    @list.on ListEvent.Update, ((e) => @item_updated(e.data.item)), @, (e) => ((e.data.type is ListEvent.ItemAdded or e.data.type is ListEvent.ItemUpdated) and e.data.item.host is @list) 
+    @list.on ListEvent.Update, ((e) => @resort()), @, (e) => ((e.data.type is ListEvent.Load) and e.target is @list) 
     @
 
   item_updated: (item) ->
@@ -69,13 +68,13 @@ class pi.List.Sortable extends pi.Plugin
     @list.items.sort @_compare_fun
 
     @list.data_provider(@list.items.slice(),true,false)
-    @list.trigger pi.ListEvent.Sorted, sort_params
+    @list.trigger ListEvent.Sorted, sort_params
 
   sorted: (sort_params) ->
     return unless sort_params?
     sort_params = utils.to_a sort_params
     @_prevs = sort_params
     @_compare_fun = (a,b) -> utils.keys_compare a.record, b.record, sort_params
-    @list.trigger pi.ListEvent.Sorted, sort_params
+    @list.trigger ListEvent.Sorted, sort_params
 
-module.exports = pi.List.Sortable
+module.exports = List.Sortable

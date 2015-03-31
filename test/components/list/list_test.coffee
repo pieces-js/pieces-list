@@ -1,5 +1,5 @@
 'use strict'
-h = require 'pi/test/helpers'
+h = require 'pieces-list/test/helpers'
 utils = pi.utils
 Nod = pi.Nod
 
@@ -96,7 +96,7 @@ describe "List", ->
       expect(test_div.find('.test').find('.item')).to.be.null
 
     it "create items nods as components", ->
-      expect(list.items[0]).to.be.an.instanceof pi.Base
+      expect(list.items[0]).to.be.an.instanceof $c.Base
 
     it "peicify items nods", ->
       list._renderer = 
@@ -112,9 +112,9 @@ describe "List", ->
 
       item = list.where(title: 'coffee')[0]
 
-      expect(item).to.be.an.instanceof pi.Base
+      expect(item).to.be.an.instanceof $c.Base
       expect(item.host).to.eq list      
-      expect(item.find('.author')).to.be.an.instanceof pi.Base
+      expect(item.find('.author')).to.be.an.instanceof $c.Base
 
   describe "renderers", ->
     beforeEach ->

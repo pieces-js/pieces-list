@@ -1,23 +1,22 @@
 'use strict'
-pi = require 'pi'
-require '../../components/list'
-require './selectable'
-utils = pi.utils
+Plugin = require('pieces-core').Plugin
+List = require '../../components/list'
+ListEvent = require '../../components/events/list_events'
+Klass = require '../../components/utils/klass'
+utils = require('pieces-core').utils
+Selectable = require './selectable'
+Nod = require('pieces-core').Nod
 
-# [Plugin]
 # Add ability to 'select' elements within list and sublists
 # All sublists should have class 'pi-list'
-
-_null = ->
-
-class pi.List.NestedSelect extends pi.List.Selectable
+class List.NestedSelect extends Selectable
   id: 'nested_select'
   initialize: (@list) ->
-    pi.Plugin::initialize.apply @, arguments
+    Plugin::initialize.apply @, arguments
 
-    @nested_klass = @list.options.nested_klass || 'nested-list'
+    @nested_klass = @list.options.nested_klass || Klass.NESTED_LIST
 
-    @selectable = @list.selectable || {select_all: _null, clear_selection: _null, type: _null, _selected_item: null, enable: _null, disable: _null} 
+    @selectable = @list.selectable || {select_all: utils.pass, clear_selection: utils.pass, type: utils.pass, _selected_item: null, enable: utils.pass, disable: utils.pass} 
     @list.delegate_to @, 'clear_selection', 'select_all', 'selected', 'where', 'select_item', 'deselect_item'
 
     unless @list.has_selectable is true
@@ -29,8 +28,8 @@ class pi.List.NestedSelect extends pi.List.Selectable
 
     @type @list.options.nested_select_type||""
 
-    @list.on [pi.Events.Selected,pi.Events.SelectionCleared], (e) =>
-      if @_watching_radio and e.type is pi.Events.Selected 
+    @list.on [ListEvent.Selected, ListEvent.SelectionCleared], (e) =>
+      if @_watching_radio and e.type is ListEvent.Selected
           if e.target is @list
             item = @selectable._selected_item
           else
@@ -48,14 +47,14 @@ class pi.List.NestedSelect extends pi.List.Selectable
       @enabled = true
       @selectable.enable()
       for item in @list.find_cut(".#{@nested_klass}")
-        pi.Nod.fetch(item._nod)?.selectable?.enable()        
+        Nod.fetch(item._nod)?.selectable?.enable()        
 
   disable: ->
     if @enabled
       @enabled = false
       @selectable.disable()
       for item in @list.find_cut(".#{@nested_klass}")
-        pi.Nod.fetch(item._nod)?.selectable?.disable()        
+        Nod.fetch(item._nod)?.selectable?.disable()        
 
 
   select_item: (item, force = false) ->
@@ -73,9 +72,9 @@ class pi.List.NestedSelect extends pi.List.Selectable
       item
 
   where: (query) ->
-    ref = pi.List::where.call(@list, query)
+    ref = List::where.call(@list, query)
     for item in @list.find_cut(".#{@nested_klass}")
-      ref = ref.concat(nod.where(query)) if (nod = pi.Nod.fetch(item._nod))
+      ref = ref.concat(nod.where(query)) if (nod = Nod.fetch(item._nod))
     ref   
 
   type: (value) ->
@@ -102,26 +101,26 @@ class pi.List.NestedSelect extends pi.List.Selectable
   clear_selection: (silent = false, force = false) ->
     @selectable.clear_selection(silent, force)
     for item in @list.find_cut(".#{@nested_klass}")
-      pi.Nod.fetch(item._nod)?.clear_selection?(silent)          
-    @list.trigger(pi.Events.SelectionCleared) unless silent
+      Nod.fetch(item._nod)?.clear_selection?(silent)          
+    @list.trigger(ListEvent.SelectionCleared) unless silent
   
   select_all: (silent = false, force = false) ->
     @selectable.select_all(true, force)
     for item in @list.find_cut(".#{@nested_klass}")
-      pi.Nod.fetch(item._nod)?.select_all?(true, force)         
+      Nod.fetch(item._nod)?.select_all?(true, force)         
     unless silent
       _selected = @selected() 
-      @list.trigger(pi.Events.Selected, _selected) if _selected.length
+      @list.trigger(ListEvent.Selected, _selected) if _selected.length
 
   selected: () ->
     _selected = []
     for item in @list.items
       if item.__selected__
         _selected.push item
-      if item instanceof pi.List
+      if item instanceof List
         _selected = _selected.concat (item.selected?()||[])
       else if (sublists = item.find_cut(".#{@nested_klass}"))
-        _selected = _selected.concat((pi.Nod.fetch(sublist._nod)?.selected?()||[])) for sublist in sublists
+        _selected = _selected.concat((Nod.fetch(sublist._nod)?.selected?()||[])) for sublist in sublists
     _selected
 
-module.exports = pi.List.NestedSelect
+module.exports = List.NestedSelect

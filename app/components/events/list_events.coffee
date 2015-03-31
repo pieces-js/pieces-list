@@ -1,7 +1,6 @@
 'use strict'
-pi = require 'pi'
 
-pi.ListEvent = 
+ListEvent = 
   Update: 'update'
   ItemAdded: 'item_added'
   ItemRemoved: 'item_removed'
@@ -14,3 +13,7 @@ pi.ListEvent =
   Searched: 'searched'
   ScrollEnd: 'scroll_end'
   Sorted: 'sorted'
+  Selected: 'selected'
+  SelectionCleared: 'selection_cleared'
+
+module.exports = ListEvent

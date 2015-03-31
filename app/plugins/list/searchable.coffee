@@ -1,33 +1,33 @@
 'use strict'
-pi = require 'pi'
-require '../../components/list'
-utils = pi.utils
-# [Plugin]
-#
+Plugin = require('pieces-core').Plugin
+List = require '../../components/list'
+ListEvent = require '../../components/events/list_events'
+Klass = require '../../components/utils/klass'
+utils = require('pieces-core').utils
+Nod = require('pieces-core').Nod
+
 #  Add 'search' method to list
 #  Search items detaching (not hiding!) DOM elements 
 #  
 #  To search within scope define 'options.search_scope'.
 #  
 #  Scope is a CSS selector (or selectors separated by commas), e.g. '.title,.email' (no spaces between selectors!)
-#  
-
 _clear_mark_regexp = /<mark>([^<>]*)<\/mark>/gim
 _selector_regexp = /[\.#a-z\s\[\]=\"-_,]/i
 
 _is_continuation = (prev,query) ->
   query.match(prev)?.index == 0
 
-class pi.List.Searchable extends pi.Plugin
+class List.Searchable extends Plugin
   id: 'searchable'
   initialize: (@list) ->
     super
     @update_scope @list.options.search_scope
     @list.delegate_to @, 'search', 'highlight'
     @searching = false
-    @list.on pi.ListEvent.Update, ((e) => @item_updated(e.data.item)), 
+    @list.on ListEvent.Update, ((e) => @item_updated(e.data.item)), 
       @, 
-      (e) => ((e.data.type is pi.ListEvent.ItemAdded or e.data.type is pi.ListEvent.ItemUpdated) and e.data.item.host is @list)
+      (e) => ((e.data.type is ListEvent.ItemAdded or e.data.type is ListEvent.ItemUpdated) and e.data.item.host is @list)
     @
 
   item_updated: (item) ->
@@ -66,21 +66,21 @@ class pi.List.Searchable extends pi.Plugin
   start_search: () ->
     return if @searching
     @searching = true
-    @list.addClass pi.klass.SEARCHING
+    @list.addClass Klass.SEARCHING
     @_all_items = @list.items.slice()
     @_prevq = ''
 
   stop_search: (rollback = true) ->
     return unless @searching
     @searching = false
-    @list.removeClass pi.klass.SEARCHING
+    @list.removeClass Klass.SEARCHING
     items = @all_items()
     @clear_highlight(items) if @__highlighted__
     @__highlighted__ = false
     @list.data_provider(items, false, false) if rollback
     @_all_items = null
     @matcher = null
-    @list.trigger pi.ListEvent.Searched, false
+    @list.trigger ListEvent.Searched, false
 
   clear_highlight: (nodes) ->
     for nod in nodes
@@ -125,6 +125,6 @@ class pi.List.Searchable extends pi.Plugin
 
     if highlight
       @highlight(q)
-    @list.trigger pi.ListEvent.Searched, true
+    @list.trigger ListEvent.Searched, true
 
-module.exports = pi.List.Searchable
+module.exports = List.Searchable

@@ -7,8 +7,7 @@ exports.config =
         data
       else
         path = path.replace(/^app\//, '').replace(/\.[^\.]+$/,'')
-        unless /^pi(\.|$)/.test(path)
-          path = 'pi/'+path
+        path='pieces-list/'+path
         """
           require.define({'#{path}': function(exports, require, module) {
             #{data}
@@ -25,7 +24,7 @@ exports.config =
     javascripts:
       defaultExtension: 'coffee'
       joinTo:
-        'js/pieces.list.js': /^(app\/pi\.list\.js|app\/(components|plugins|controllers|views))/
+        'js/pieces.list.js': /^(app\/index\.js|app\/(components|plugins|controllers|views))/
         'js/vendor.js': /^(bower_components|vendor)[\\/](?!test)/
         'test/js/test.js': /^test/
         'test/js/test-vendor.js':  /^vendor[\\/](?=test)/

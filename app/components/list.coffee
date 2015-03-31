@@ -1,18 +1,21 @@
 'use strict'
-pi = require 'pi'
-require './events/list_events'
-utils = pi.utils
+Base = require('pieces-core').components.Base
+ListEvent = require './events/list_events'
+Nod = require('pieces-core').Nod
+utils = require('pieces-core').utils
+Klass = require './utils/klass'
+Renderable = Base.Renderable
 
 # Basic list component
-class pi.List extends pi.Base
-  @include_plugins pi.Base.Renderable
+class List extends Base
+  @include_plugins Renderable
 
-  merge_classes: [pi.klass.DISABLED, pi.klass.ACTIVE, pi.klass.HIDDEN]
+  merge_classes: [Klass.DISABLED, Klass.ACTIVE, Klass.HIDDEN]
 
   preinitialize: () ->
     super
-    @list_klass = @options.list_klass || pi.klass.LIST
-    @item_klass = @options.item_klass || pi.klass.LIST_ITEM
+    @list_klass = @options.list_klass || Klass.LIST
+    @item_klass = @options.item_klass || Klass.LIST_ITEM
 
     @items = []
     @buffer = document.createDocumentFragment()
@@ -33,7 +36,7 @@ class pi.List extends pi.Base
   parse_html_items: () ->
     for node in @items_cont.find_cut(".#{ @item_klass }") 
       do (node) =>   
-        @add_item pi.Nod.create(node), true
+        @add_item Nod.create(node), true
     @_flush_buffer()
 
   # Set list elements
@@ -58,7 +61,7 @@ class pi.List extends pi.Base
 
     unless silent then @items_cont.append(item) else @buffer.appendChild(item.node)
 
-    @trigger(pi.ListEvent.Update, {type:pi.ListEvent.ItemAdded, item:item}) unless silent
+    @trigger(ListEvent.Update, {type: ListEvent.ItemAdded, item:item}) unless silent
     item
     
   add_item_at: (data, index, silent = false) ->
@@ -80,7 +83,7 @@ class pi.List extends pi.Base
 
     unless silent
       @_update_indeces()
-      @trigger(pi.ListEvent.Update, {type: pi.ListEvent.ItemAdded, item:item})
+      @trigger(ListEvent.Update, {type: ListEvent.ItemAdded, item:item})
     item
 
   remove_item: (item,silent = false, destroy = true) ->
@@ -98,7 +101,7 @@ class pi.List extends pi.Base
 
       unless silent
         @_update_indeces()
-        @trigger(pi.ListEvent.Update, {type: pi.ListEvent.ItemRemoved,item:item})
+        @trigger(ListEvent.Update, {type: ListEvent.ItemRemoved,item:item})
       true
     else
       false
@@ -145,7 +148,7 @@ class pi.List extends pi.Base
     # ... and postinitialize (because DOM was updated)
     item.postinitialize()
 
-    @trigger(pi.ListEvent.Update, {type: pi.ListEvent.ItemUpdated,item:item}) unless silent
+    @trigger(ListEvent.Update, {type: ListEvent.ItemUpdated, item: item}) unless silent
     item  
 
   move_item: (item, index) ->
@@ -188,13 +191,13 @@ class pi.List extends pi.Base
     @_flush_buffer()
     @_update_indeces() if @_need_update_indeces
     @_check_empty(silent)
-    @trigger(pi.ListEvent.Update, {type: type}) unless silent
+    @trigger(ListEvent.Update, {type: type}) unless silent
 
   clear: (silent = false, remove = true) ->
     @items_cont.detach_children() unless remove
     @items_cont.remove_children() if remove
     @items.length = 0
-    @trigger(pi.ListEvent.Update, {type: pi.ListEvent.Clear}) unless silent
+    @trigger(ListEvent.Update, {type: ListEvent.Clear}) unless silent
     @_check_empty(silent)
 
   _update_indeces: ->
@@ -205,24 +208,24 @@ class pi.List extends pi.Base
 
   _check_empty: (silent = false) ->
     if !@empty and @items.length is 0
-      @addClass pi.klass.EMPTY
+      @addClass Klass.EMPTY
       @empty = true
-      @trigger(pi.ListEvent.Empty, true) unless silent
+      @trigger(ListEvent.Empty, true) unless silent
     else if @empty and @items.length > 0
-      @removeClass pi.klass.EMPTY
+      @removeClass Klass.EMPTY
       @empty = false
-      @trigger(pi.ListEvent.Empty, false) unless silent
+      @trigger(ListEvent.Empty, false) unless silent
     
 
   _create_item: (data={},index) ->
-    if data instanceof pi.Nod and data.is_list_item
+    if data instanceof Nod and data.is_list_item
       if data.host is @
         data.$index = index
         data.$num = index+1
         return data
       else
         return null
-    if data instanceof pi.Nod 
+    if data instanceof Nod 
       data.data('$index', index)
       data.data('$num', index+1)
     else
@@ -246,7 +249,7 @@ class pi.List extends pi.Base
     return unless target.is_list_item
     item = target
     if item and item.host is @
-      @trigger pi.ListEvent.ItemClick, {item: item}
+      @trigger ListEvent.ItemClick, {item: item}
       true
 
-module.exports = pi.List
+module.exports = List

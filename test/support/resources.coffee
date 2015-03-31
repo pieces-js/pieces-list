@@ -1,5 +1,4 @@
 'use strict'
-pi = require 'pi'
 
 class pi.Testo extends pi.resources.Base
   @set_resource 'testos'
@@ -56,7 +55,6 @@ class pi.TestoRest2 extends pi.resources.REST
 
 class pi.resources.TestUsers extends pi.resources.REST
   @set_resource 'users'
-  @extend pi.resources.Query 
   @params 'name','age'
 
 

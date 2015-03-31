@@ -1,7 +1,5 @@
 'use strict'
-require 'pi'
 pi.noconflict()
-
 require './support/resources'
 
 class TestHelpers
@@ -88,10 +86,9 @@ class TestHelpers
     window.dispatchEvent(ev)
 
   @mock_net: ->
-    @_orig_net = pi.net
-    pi.net = (pi._mock_net ||= ( ->
-      net =
-        request: (method, url, data, options) ->
+    @_orig_req = pi.Net.request
+    pi.Net.request = (pi._mock_net ||= ( ->
+        (method, url, data, options) ->
           new Promise(
             (resolve, reject) ->
               req = new XMLHttpRequest()
@@ -123,12 +120,12 @@ class TestHelpers
             
               req.send(null)
           )
-      net[method] = curry(net.request, [method.toUpperCase()], net) for method in ['get', 'post', 'patch', 'delete']
-      net
       )())
+    pi.Net[method] = curry(pi.Net.request, [method.toUpperCase()], pi.Net) for method in ['get', 'post', 'patch', 'put', 'delete']
     return
   @unmock_net: ->
-    pi.net = @_orig_net
+    pi.Net.request = @_orig_req
+    pi.Net[method] = curry(pi.Net.request, [method.toUpperCase()], pi.Net) for method in ['get', 'post', 'patch', 'put', 'delete']
 
   @mock_raf: ->
     @_orig_raf = pi.Nod::_with_raf

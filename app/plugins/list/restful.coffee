@@ -1,12 +1,14 @@
 'use strict'
-pi = require 'pi'
-require '../../components/list'
-utils = pi.utils
+Plugin = require('pieces-core').Plugin
+List = require '../../components/list'
+ListEvent = require '../../components/events/list_events'
+Klass = require '../../components/utils/klass'
+utils = require('pieces-core').utils
+Events = require('pieces-core').components.Events
+Compiler = require('pieces-core').Compiler
 
-# [Plugin]
-#
 # Bind resources to List (handle create, update and destroy events)  
-class pi.List.Restful extends pi.Plugin
+class List.Restful extends Plugin
   id: 'restful'
   initialize: (@list) ->
     super
@@ -18,13 +20,13 @@ class pi.List.Restful extends pi.Plugin
       unless rest.indexOf(".") > 0
         rest = utils.camelCase(rest)
 
-      resources = pi.Compiler.str_to_fun(rest).call() 
+      resources = Compiler.str_to_fun(rest).call() 
 
     if resources?
       @bind resources, @list.options.load_rest, @scope
 
     @list.delegate_to @, 'find_by_id'
-    @list.on pi.Events.Destroyed, =>
+    @list.on Events.Destroyed, =>
       @bind null
       false
     @
@@ -52,7 +54,7 @@ class pi.List.Restful extends pi.Plugin
   load: (data) ->
     for item in data
       @items_by_id[item.id] = @list.add_item(item, true) unless @items_by_id[item.id] and @listen_load
-    @list.update(pi.ListEvent.Load)
+    @list.update(ListEvent.Load)
 
   resource_update: (e) ->
     utils.debug_verbose 'Restful list event', e
@@ -88,4 +90,4 @@ class pi.List.Restful extends pi.Plugin
     @items_by_id = {}
     @resources.off(@resource_update()) if @resources?
 
-module.exports = pi.List.Restful
+module.exports = List.Restful
