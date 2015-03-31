@@ -14,7 +14,6 @@
 
 # Sublime
 *.sublime-project
-*.html
 *.sublime-workspace
 
 # OS or Editor folders
@@ -37,4 +36,3 @@ tmp/
 
 # Brunch output folder.
 public/
-pieces-rails/

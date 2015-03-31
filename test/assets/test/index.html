@@ -1,0 +1,28 @@
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="stylesheets/test.css" />
+  </head>
+  <body>
+    <div id="mocha"></div>
+    <script src="js/test-vendor.js"></script>
+    <script>
+      mocha.ui('bdd');
+      mocha.reporter('html');
+      expect = chai.expect;
+    </script>
+    <script src="../js/vendor.js"></script>
+    <script src="../js/pieces.list.js"></script>
+    <script src="js/test.js"></script>
+    <script>
+      require('pieces-list');
+      window.require.list().filter(function (name) {return /test\//.test(name);}).forEach(require);
+      pi.app.initialize();
+      // allow to set _nod on window
+      mocha.setup({globals:['_nod']});
+      mocha.checkLeaks();
+      if (window.mochaPhantomJS) { mochaPhantomJS.run(); }
+      else { mocha.run(); }
+    </script>
+  </body>
+</html>
