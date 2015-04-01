@@ -1,11 +1,11 @@
 'use strict'
-Plugin = require('pieces-core').Plugin
+Plugin = pi.Plugin
 List = require '../../components/list'
 ListEvent = require '../../components/events/list_events'
 Klass = require '../../components/utils/klass'
-utils = require('pieces-core').utils
+utils = pi.utils
 Selectable = require './selectable'
-Nod = require('pieces-core').Nod
+Nod = pi.Nod
 
 # Add ability to 'select' elements within list and sublists
 # All sublists should have class 'pi-list'

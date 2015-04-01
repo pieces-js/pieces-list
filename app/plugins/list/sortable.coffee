@@ -1,8 +1,8 @@
 'use strict'
-Plugin = require('pieces-core').Plugin
+Plugin = pi.Plugin
 List = require '../../components/list'
 ListEvent = require '../../components/events/list_events'
-utils = require('pieces-core').utils
+utils = pi.utils
 
 # Add 'sort(field,order)' method to list
 class List.Sortable extends Plugin

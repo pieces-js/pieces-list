@@ -1,5 +1,5 @@
 'use strict'
-Klass = require('pieces-core').klass
+Klass = pi.klass
 Klass.LIST = 'list'
 Klass.LIST_ITEM = 'item'
 Klass.NESTED_LIST = 'pi-list'

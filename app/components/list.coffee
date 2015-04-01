@@ -1,8 +1,8 @@
 'use strict'
-Base = require('pieces-core').components.Base
+Base = pi.components.Base
 ListEvent = require './events/list_events'
-Nod = require('pieces-core').Nod
-utils = require('pieces-core').utils
+Nod = pi.Nod
+utils = pi.utils
 Klass = require './utils/klass'
 Renderable = Base.Renderable
 

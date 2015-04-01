@@ -1,11 +1,11 @@
 'use strict'
-Plugin = require('pieces-core').Plugin
+Plugin = pi.Plugin
 List = require '../../components/list'
 ListEvent = require '../../components/events/list_events'
 Klass = require '../../components/utils/klass'
-utils = require('pieces-core').utils
-Events = require('pieces-core').components.Events
-Compiler = require('pieces-core').Compiler
+utils = pi.utils
+Events = pi.components.Events
+Compiler = pi.Compiler
 
 # Bind resources to List (handle create, update and destroy events)  
 class List.Restful extends Plugin

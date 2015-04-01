@@ -113,23 +113,22 @@ ListEvent = {
 
 module.exports = ListEvent;
 
-
 }});
 
-require.define({'pieces-list/components/list': function(exports, require, module) {
+;require.define({'pieces-list/components/list': function(exports, require, module) {
   'use strict';
-var Base, Klass, List, ListEvent, Nod, Renderable, utils, _ref,
+var Base, Klass, List, ListEvent, Nod, Renderable, utils,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   __indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
 
-Base = require('pieces-core').components.Base;
+Base = pi.components.Base;
 
 ListEvent = require('./events/list_events');
 
-Nod = require('pieces-core').Nod;
+Nod = pi.Nod;
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
 Klass = require('./utils/klass');
 
@@ -139,8 +138,7 @@ List = (function(_super) {
   __extends(List, _super);
 
   function List() {
-    _ref = List.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return List.__super__.constructor.apply(this, arguments);
   }
 
   List.include_plugins(Renderable);
@@ -162,28 +160,30 @@ List = (function(_super) {
   };
 
   List.prototype.postinitialize = function() {
-    var _this = this;
     this._check_empty();
     if (this.options.noclick == null) {
-      return this.listen("." + this.item_klass, 'click', function(e) {
-        if (!utils.is_clickable(e.origTarget)) {
-          if (_this._item_clicked(e.target)) {
-            return e.cancel();
+      return this.listen("." + this.item_klass, 'click', (function(_this) {
+        return function(e) {
+          if (!utils.is_clickable(e.origTarget)) {
+            if (_this._item_clicked(e.target)) {
+              return e.cancel();
+            }
           }
-        }
-      });
+        };
+      })(this));
     }
   };
 
   List.prototype.parse_html_items = function() {
-    var node, _fn, _i, _len, _ref1,
-      _this = this;
-    _ref1 = this.items_cont.find_cut("." + this.item_klass);
-    _fn = function(node) {
-      return _this.add_item(Nod.create(node), true);
-    };
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      node = _ref1[_i];
+    var node, _fn, _i, _len, _ref;
+    _ref = this.items_cont.find_cut("." + this.item_klass);
+    _fn = (function(_this) {
+      return function(node) {
+        return _this.add_item(Nod.create(node), true);
+      };
+    })(this);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      node = _ref[_i];
       _fn(node);
     }
     return this._flush_buffer();
@@ -316,7 +316,7 @@ List = (function(_super) {
   };
 
   List.prototype.update_item = function(item, data, silent) {
-    var klass, new_item, _i, _len, _ref1;
+    var klass, new_item, _i, _len, _ref;
     if (silent == null) {
       silent = false;
     }
@@ -324,9 +324,9 @@ List = (function(_super) {
     utils.extend(item.record, new_item.record, true);
     item.remove_children();
     item.html(new_item.html());
-    _ref1 = item.node.className.split(/\s+/);
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      klass = _ref1[_i];
+    _ref = item.node.className.split(/\s+/);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      klass = _ref[_i];
       if (klass && !(__indexOf.call(this.merge_classes, klass) >= 0)) {
         item.removeClass(klass);
       }
@@ -363,12 +363,12 @@ List = (function(_super) {
   };
 
   List.prototype.where = function(query) {
-    var item, matcher, _i, _len, _ref1, _results;
+    var item, matcher, _i, _len, _ref, _results;
     matcher = typeof query === "string" ? utils.matchers.nod(query) : utils.matchers.object(query);
-    _ref1 = this.items;
+    _ref = this.items;
     _results = [];
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
       if (matcher(item)) {
         _results.push(item);
       }
@@ -425,10 +425,10 @@ List = (function(_super) {
   };
 
   List.prototype._update_indeces = function() {
-    var i, item, _i, _len, _ref1;
-    _ref1 = this.items;
-    for (i = _i = 0, _len = _ref1.length; _i < _len; i = ++_i) {
-      item = _ref1[i];
+    var i, item, _i, _len, _ref;
+    _ref = this.items;
+    for (i = _i = 0, _len = _ref.length; _i < _len; i = ++_i) {
+      item = _ref[i];
       item.record.$index = i;
       item.record.$num = i + 1;
     }
@@ -523,14 +523,13 @@ List = (function(_super) {
 
 module.exports = List;
 
-
 }});
 
-require.define({'pieces-list/components/utils/klass': function(exports, require, module) {
+;require.define({'pieces-list/components/utils/klass': function(exports, require, module) {
   'use strict';
 var Klass;
 
-Klass = require('pieces-core').klass;
+Klass = pi.klass;
 
 Klass.LIST = 'list';
 
@@ -544,26 +543,25 @@ Klass.SEARCHING = 'is-searhing';
 
 module.exports = Klass;
 
-
 }});
 
-require.define({'pieces-list/index': function(exports, require, module) {
+;require.define({'pieces-list/index': function(exports, require, module) {
   'use strict'
-var pi = require('pieces-core')
-pi.components.List = require('./components/list')
-require('./plugins/list')
-module.exports = pi
+var pi = window.pi;
+pi.components.List = require('./components/list');
+require('./plugins/list');
+module.exports = pi.components.List;
 
 
 }});
 
-;require.define({'pieces-list/plugins/list/filterable': function(exports, require, module) {
+require.define({'pieces-list/plugins/list/filterable': function(exports, require, module) {
   'use strict';
-var Klass, List, ListEvent, Plugin, utils, _is_continuation, _ref,
+var Klass, List, ListEvent, Plugin, utils, _is_continuation,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Plugin = require('pieces-core').Plugin;
+Plugin = pi.Plugin;
 
 List = require('../../components/list');
 
@@ -571,7 +569,7 @@ ListEvent = require('../../components/events/list_events');
 
 Klass = require('../../components/utils/klass');
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
 _is_continuation = function(prev, params) {
   var key, val;
@@ -589,22 +587,24 @@ List.Filterable = (function(_super) {
   __extends(Filterable, _super);
 
   function Filterable() {
-    _ref = Filterable.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return Filterable.__super__.constructor.apply(this, arguments);
   }
 
   Filterable.prototype.id = 'filterable';
 
   Filterable.prototype.initialize = function(list) {
-    var _this = this;
     this.list = list;
     Filterable.__super__.initialize.apply(this, arguments);
     this.list.delegate_to(this, 'filter');
-    this.list.on(ListEvent.Update, (function(e) {
-      return _this.item_updated(e.data.item);
-    }), this, function(e) {
-      return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
-    });
+    this.list.on(ListEvent.Update, ((function(_this) {
+      return function(e) {
+        return _this.item_updated(e.data.item);
+      };
+    })(this)), this, (function(_this) {
+      return function(e) {
+        return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
+      };
+    })(this));
     return this;
   };
 
@@ -690,10 +690,9 @@ List.Filterable = (function(_super) {
 
 module.exports = List.Filterable;
 
-
 }});
 
-require.define({'pieces-list/plugins/list/index': function(exports, require, module) {
+;require.define({'pieces-list/plugins/list/index': function(exports, require, module) {
   'use strict'
 require('./selectable');
 require('./sortable');
@@ -708,11 +707,11 @@ require('./restful');
 
 require.define({'pieces-list/plugins/list/nested_select': function(exports, require, module) {
   'use strict';
-var Klass, List, ListEvent, Nod, Plugin, Selectable, utils, _ref,
+var Klass, List, ListEvent, Nod, Plugin, Selectable, utils,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Plugin = require('pieces-core').Plugin;
+Plugin = pi.Plugin;
 
 List = require('../../components/list');
 
@@ -720,24 +719,22 @@ ListEvent = require('../../components/events/list_events');
 
 Klass = require('../../components/utils/klass');
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
 Selectable = require('./selectable');
 
-Nod = require('pieces-core').Nod;
+Nod = pi.Nod;
 
 List.NestedSelect = (function(_super) {
   __extends(NestedSelect, _super);
 
   function NestedSelect() {
-    _ref = NestedSelect.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return NestedSelect.__super__.constructor.apply(this, arguments);
   }
 
   NestedSelect.prototype.id = 'nested_select';
 
   NestedSelect.prototype.initialize = function(list) {
-    var _this = this;
     this.list = list;
     Plugin.prototype.initialize.apply(this, arguments);
     this.nested_klass = this.list.options.nested_klass || Klass.NESTED_LIST;
@@ -758,58 +755,60 @@ List.NestedSelect = (function(_super) {
       this.disable();
     }
     this.type(this.list.options.nested_select_type || "");
-    this.list.on([ListEvent.Selected, ListEvent.SelectionCleared], function(e) {
-      var item;
-      if (_this._watching_radio && e.type === ListEvent.Selected) {
-        if (e.target === _this.list) {
-          item = _this.selectable._selected_item;
-        } else {
-          item = e.data[0].host.selectable._selected_item;
+    this.list.on([ListEvent.Selected, ListEvent.SelectionCleared], (function(_this) {
+      return function(e) {
+        var item;
+        if (_this._watching_radio && e.type === ListEvent.Selected) {
+          if (e.target === _this.list) {
+            item = _this.selectable._selected_item;
+          } else {
+            item = e.data[0].host.selectable._selected_item;
+          }
+          _this.update_radio_selection(item);
         }
-        _this.update_radio_selection(item);
-      }
-      if (e.target !== _this.list) {
-        e.cancel();
-        return _this._check_selected();
-      } else {
-        return false;
-      }
-    });
+        if (e.target !== _this.list) {
+          e.cancel();
+          return _this._check_selected();
+        } else {
+          return false;
+        }
+      };
+    })(this));
     return this;
   };
 
   NestedSelect.prototype.enable = function() {
-    var item, _i, _len, _ref1, _ref2, _ref3, _results;
+    var item, _i, _len, _ref, _ref1, _ref2, _results;
     if (!this.enabled) {
       this.enabled = true;
       this.selectable.enable();
-      _ref1 = this.list.find_cut("." + this.nested_klass);
+      _ref = this.list.find_cut("." + this.nested_klass);
       _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        item = _ref1[_i];
-        _results.push((_ref2 = Nod.fetch(item._nod)) != null ? (_ref3 = _ref2.selectable) != null ? _ref3.enable() : void 0 : void 0);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        item = _ref[_i];
+        _results.push((_ref1 = Nod.fetch(item._nod)) != null ? (_ref2 = _ref1.selectable) != null ? _ref2.enable() : void 0 : void 0);
       }
       return _results;
     }
   };
 
   NestedSelect.prototype.disable = function() {
-    var item, _i, _len, _ref1, _ref2, _ref3, _results;
+    var item, _i, _len, _ref, _ref1, _ref2, _results;
     if (this.enabled) {
       this.enabled = false;
       this.selectable.disable();
-      _ref1 = this.list.find_cut("." + this.nested_klass);
+      _ref = this.list.find_cut("." + this.nested_klass);
       _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        item = _ref1[_i];
-        _results.push((_ref2 = Nod.fetch(item._nod)) != null ? (_ref3 = _ref2.selectable) != null ? _ref3.disable() : void 0 : void 0);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        item = _ref[_i];
+        _results.push((_ref1 = Nod.fetch(item._nod)) != null ? (_ref2 = _ref1.selectable) != null ? _ref2.disable() : void 0 : void 0);
       }
       return _results;
     }
   };
 
   NestedSelect.prototype.select_item = function(item, force) {
-    var _ref1;
+    var _ref;
     if (force == null) {
       force = false;
     }
@@ -817,9 +816,9 @@ List.NestedSelect = (function(_super) {
       if (this._watching_radio) {
         this.clear_selection(true);
       }
-      if ((_ref1 = item.host.selectable) != null) {
-        if (typeof _ref1.select_item === "function") {
-          _ref1.select_item(item, force);
+      if ((_ref = item.host.selectable) != null) {
+        if (typeof _ref.select_item === "function") {
+          _ref.select_item(item, force);
         }
       }
       this._check_selected();
@@ -828,14 +827,14 @@ List.NestedSelect = (function(_super) {
   };
 
   NestedSelect.prototype.deselect_item = function(item, force) {
-    var _ref1;
+    var _ref;
     if (force == null) {
       force = false;
     }
     if (item.__selected__) {
-      if ((_ref1 = item.host.selectable) != null) {
-        if (typeof _ref1.deselect_item === "function") {
-          _ref1.deselect_item(item, force);
+      if ((_ref = item.host.selectable) != null) {
+        if (typeof _ref.deselect_item === "function") {
+          _ref.deselect_item(item, force);
         }
       }
       this._check_selected();
@@ -844,11 +843,11 @@ List.NestedSelect = (function(_super) {
   };
 
   NestedSelect.prototype.where = function(query) {
-    var item, nod, ref, _i, _len, _ref1;
+    var item, nod, ref, _i, _len, _ref;
     ref = List.prototype.where.call(this.list, query);
-    _ref1 = this.list.find_cut("." + this.nested_klass);
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
+    _ref = this.list.find_cut("." + this.nested_klass);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
       if ((nod = Nod.fetch(item._nod))) {
         ref = ref.concat(nod.where(query));
       }
@@ -885,7 +884,7 @@ List.NestedSelect = (function(_super) {
   };
 
   NestedSelect.prototype.clear_selection = function(silent, force) {
-    var item, _i, _len, _ref1, _ref2;
+    var item, _i, _len, _ref, _ref1;
     if (silent == null) {
       silent = false;
     }
@@ -893,12 +892,12 @@ List.NestedSelect = (function(_super) {
       force = false;
     }
     this.selectable.clear_selection(silent, force);
-    _ref1 = this.list.find_cut("." + this.nested_klass);
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
-      if ((_ref2 = Nod.fetch(item._nod)) != null) {
-        if (typeof _ref2.clear_selection === "function") {
-          _ref2.clear_selection(silent);
+    _ref = this.list.find_cut("." + this.nested_klass);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      if ((_ref1 = Nod.fetch(item._nod)) != null) {
+        if (typeof _ref1.clear_selection === "function") {
+          _ref1.clear_selection(silent);
         }
       }
     }
@@ -908,7 +907,7 @@ List.NestedSelect = (function(_super) {
   };
 
   NestedSelect.prototype.select_all = function(silent, force) {
-    var item, _i, _len, _ref1, _ref2, _selected;
+    var item, _i, _len, _ref, _ref1, _selected;
     if (silent == null) {
       silent = false;
     }
@@ -916,12 +915,12 @@ List.NestedSelect = (function(_super) {
       force = false;
     }
     this.selectable.select_all(true, force);
-    _ref1 = this.list.find_cut("." + this.nested_klass);
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
-      if ((_ref2 = Nod.fetch(item._nod)) != null) {
-        if (typeof _ref2.select_all === "function") {
-          _ref2.select_all(true, force);
+    _ref = this.list.find_cut("." + this.nested_klass);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
+      if ((_ref1 = Nod.fetch(item._nod)) != null) {
+        if (typeof _ref1.select_all === "function") {
+          _ref1.select_all(true, force);
         }
       }
     }
@@ -934,11 +933,11 @@ List.NestedSelect = (function(_super) {
   };
 
   NestedSelect.prototype.selected = function() {
-    var item, sublist, sublists, _i, _j, _len, _len1, _ref1, _ref2, _selected;
+    var item, sublist, sublists, _i, _j, _len, _len1, _ref, _ref1, _selected;
     _selected = [];
-    _ref1 = this.list.items;
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
+    _ref = this.list.items;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
       if (item.__selected__) {
         _selected.push(item);
       }
@@ -947,7 +946,7 @@ List.NestedSelect = (function(_super) {
       } else if ((sublists = item.find_cut("." + this.nested_klass))) {
         for (_j = 0, _len1 = sublists.length; _j < _len1; _j++) {
           sublist = sublists[_j];
-          _selected = _selected.concat(((_ref2 = Nod.fetch(sublist._nod)) != null ? typeof _ref2.selected === "function" ? _ref2.selected() : void 0 : void 0) || []);
+          _selected = _selected.concat(((_ref1 = Nod.fetch(sublist._nod)) != null ? typeof _ref1.selected === "function" ? _ref1.selected() : void 0 : void 0) || []);
         }
       }
     }
@@ -960,16 +959,15 @@ List.NestedSelect = (function(_super) {
 
 module.exports = List.NestedSelect;
 
-
 }});
 
-require.define({'pieces-list/plugins/list/restful': function(exports, require, module) {
+;require.define({'pieces-list/plugins/list/restful': function(exports, require, module) {
   'use strict';
-var Compiler, Events, Klass, List, ListEvent, Plugin, utils, _ref,
+var Compiler, Events, Klass, List, ListEvent, Plugin, utils,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Plugin = require('pieces-core').Plugin;
+Plugin = pi.Plugin;
 
 List = require('../../components/list');
 
@@ -977,25 +975,23 @@ ListEvent = require('../../components/events/list_events');
 
 Klass = require('../../components/utils/klass');
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
-Events = require('pieces-core').components.Events;
+Events = pi.components.Events;
 
-Compiler = require('pieces-core').Compiler;
+Compiler = pi.Compiler;
 
 List.Restful = (function(_super) {
   __extends(Restful, _super);
 
   function Restful() {
-    _ref = Restful.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return Restful.__super__.constructor.apply(this, arguments);
   }
 
   Restful.prototype.id = 'restful';
 
   Restful.prototype.initialize = function(list) {
-    var resources, rest,
-      _this = this;
+    var resources, rest;
     this.list = list;
     Restful.__super__.initialize.apply(this, arguments);
     this.items_by_id = {};
@@ -1011,10 +1007,12 @@ List.Restful = (function(_super) {
       this.bind(resources, this.list.options.load_rest, this.scope);
     }
     this.list.delegate_to(this, 'find_by_id');
-    this.list.on(Events.Destroyed, function() {
-      _this.bind(null);
-      return false;
-    });
+    this.list.on(Events.Destroyed, (function(_this) {
+      return function() {
+        _this.bind(null);
+        return false;
+      };
+    })(this));
     return this;
   };
 
@@ -1068,9 +1066,9 @@ List.Restful = (function(_super) {
   };
 
   Restful.prototype.resource_update = function(e) {
-    var _ref1;
+    var _ref;
     utils.debug_verbose('Restful list event', e);
-    return (_ref1 = this["on_" + e.data.type]) != null ? _ref1.call(this, e.data[this.resources.resource_name]) : void 0;
+    return (_ref = this["on_" + e.data.type]) != null ? _ref.call(this, e.data[this.resources.resource_name]) : void 0;
   };
 
   Restful.event_handler('resource_update');
@@ -1124,16 +1122,15 @@ List.Restful = (function(_super) {
 
 module.exports = List.Restful;
 
-
 }});
 
-require.define({'pieces-list/plugins/list/scrollend': function(exports, require, module) {
+;require.define({'pieces-list/plugins/list/scrollend': function(exports, require, module) {
   'use strict';
-var Klass, List, ListEvent, Nod, Plugin, utils, _ref,
+var Klass, List, ListEvent, Nod, Plugin, utils,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Plugin = require('pieces-core').Plugin;
+Plugin = pi.Plugin;
 
 List = require('../../components/list');
 
@@ -1141,22 +1138,20 @@ ListEvent = require('../../components/events/list_events');
 
 Klass = require('../../components/utils/klass');
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
-Nod = require('pieces-core').Nod;
+Nod = pi.Nod;
 
 List.ScrollEnd = (function(_super) {
   __extends(ScrollEnd, _super);
 
   function ScrollEnd() {
-    _ref = ScrollEnd.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return ScrollEnd.__super__.constructor.apply(this, arguments);
   }
 
   ScrollEnd.prototype.id = 'scroll_end';
 
   ScrollEnd.prototype.initialize = function(list) {
-    var _this = this;
     this.list = list;
     ScrollEnd.__super__.initialize.apply(this, arguments);
     this.scroll_object = this.list.options.scroll_object === 'window' ? Nod.win : this.list.options.scroll_object ? pi.$(this.list.options.scroll_object) : this.list.items_cont;
@@ -1164,9 +1159,11 @@ List.ScrollEnd = (function(_super) {
     if (this.list.options.scroll_end !== false) {
       this.enable();
     }
-    this.list.on(ListEvent.Update, this.scroll_listener(), this, function(e) {
-      return _this.enabled && (e.data.type === ListEvent.ItemRemoved || e.data.type === ListEvent.Load);
-    });
+    this.list.on(ListEvent.Update, this.scroll_listener(), this, (function(_this) {
+      return function(e) {
+        return _this.enabled && (e.data.type === ListEvent.ItemRemoved || e.data.type === ListEvent.Load);
+      };
+    })(this));
     return this;
   };
 
@@ -1215,16 +1212,15 @@ List.ScrollEnd = (function(_super) {
 
 module.exports = List.ScrollEnd;
 
-
 }});
 
-require.define({'pieces-list/plugins/list/searchable': function(exports, require, module) {
+;require.define({'pieces-list/plugins/list/searchable': function(exports, require, module) {
   'use strict';
-var Klass, List, ListEvent, Nod, Plugin, utils, _clear_mark_regexp, _is_continuation, _ref, _selector_regexp,
+var Klass, List, ListEvent, Nod, Plugin, utils, _clear_mark_regexp, _is_continuation, _selector_regexp,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Plugin = require('pieces-core').Plugin;
+Plugin = pi.Plugin;
 
 List = require('../../components/list');
 
@@ -1232,9 +1228,9 @@ ListEvent = require('../../components/events/list_events');
 
 Klass = require('../../components/utils/klass');
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
-Nod = require('pieces-core').Nod;
+Nod = pi.Nod;
 
 _clear_mark_regexp = /<mark>([^<>]*)<\/mark>/gim;
 
@@ -1249,24 +1245,26 @@ List.Searchable = (function(_super) {
   __extends(Searchable, _super);
 
   function Searchable() {
-    _ref = Searchable.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return Searchable.__super__.constructor.apply(this, arguments);
   }
 
   Searchable.prototype.id = 'searchable';
 
   Searchable.prototype.initialize = function(list) {
-    var _this = this;
     this.list = list;
     Searchable.__super__.initialize.apply(this, arguments);
     this.update_scope(this.list.options.search_scope);
     this.list.delegate_to(this, 'search', 'highlight');
     this.searching = false;
-    this.list.on(ListEvent.Update, (function(e) {
-      return _this.item_updated(e.data.item);
-    }), this, function(e) {
-      return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
-    });
+    this.list.on(ListEvent.Update, ((function(_this) {
+      return function(e) {
+        return _this.item_updated(e.data.item);
+      };
+    })(this)), this, (function(_this) {
+      return function(e) {
+        return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
+      };
+    })(this));
     return this;
   };
 
@@ -1290,11 +1288,11 @@ List.Searchable = (function(_super) {
     this.matcher_factory = this._matcher_from_scope(scope);
     if (scope && _selector_regexp.test(scope)) {
       return this._highlight_elements = function(item) {
-        var selector, _i, _len, _ref1, _results;
-        _ref1 = scope.split(',');
+        var selector, _i, _len, _ref, _results;
+        _ref = scope.split(',');
         _results = [];
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          selector = _ref1[_i];
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          selector = _ref[_i];
           _results.push(item.find(selector));
         }
         return _results;
@@ -1386,12 +1384,12 @@ List.Searchable = (function(_super) {
   };
 
   Searchable.prototype.highlight = function(q) {
-    var item, _i, _len, _ref1;
+    var item, _i, _len, _ref;
     this.__highlighted__ = true;
     this._prevq = q;
-    _ref1 = this.list.items;
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
+    _ref = this.list.items;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
       this.highlight_item(q, item);
     }
   };
@@ -1437,16 +1435,15 @@ List.Searchable = (function(_super) {
 
 module.exports = List.Searchable;
 
-
 }});
 
-require.define({'pieces-list/plugins/list/selectable': function(exports, require, module) {
+;require.define({'pieces-list/plugins/list/selectable': function(exports, require, module) {
   'use strict';
-var Klass, List, ListEvent, Nod, Plugin, utils, _ref,
+var Klass, List, ListEvent, Nod, Plugin, utils,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Plugin = require('pieces-core').Plugin;
+Plugin = pi.Plugin;
 
 List = require('../../components/list');
 
@@ -1454,23 +1451,21 @@ ListEvent = require('../../components/events/list_events');
 
 Klass = require('../../components/utils/klass');
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
-Nod = require('pieces-core').Nod;
+Nod = pi.Nod;
 
 List.Selectable = (function(_super) {
   __extends(Selectable, _super);
 
   function Selectable() {
-    _ref = Selectable.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return Selectable.__super__.constructor.apply(this, arguments);
   }
 
   Selectable.prototype.id = 'selectable';
 
   Selectable.prototype.initialize = function(list) {
-    var item, _i, _len, _ref1,
-      _this = this;
+    var item, _i, _len, _ref;
     this.list = list;
     Selectable.__super__.initialize.apply(this, arguments);
     this.list.merge_classes.push(Klass.SELECTED);
@@ -1478,19 +1473,21 @@ List.Selectable = (function(_super) {
     if (this.list.options.no_select == null) {
       this.enable();
     }
-    _ref1 = this.list.items;
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
+    _ref = this.list.items;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
       if (item.hasClass(Klass.SELECTED)) {
         item.__selected__ = true;
       }
     }
     this.list.delegate_to(this, 'clear_selection', 'selected', 'selected_item', 'select_all', 'select_item', 'selected_records', 'selected_record', 'deselect_item', 'toggle_select', 'selected_size');
-    this.list.on(ListEvent.Update, (function(e) {
-      _this._selected = null;
-      _this._check_selected();
-      return false;
-    }), this, function(e) {
+    this.list.on(ListEvent.Update, ((function(_this) {
+      return function(e) {
+        _this._selected = null;
+        _this._check_selected();
+        return false;
+      };
+    })(this)), this, function(e) {
       return e.data.type !== ListEvent.ItemAdded;
     });
     return this;
@@ -1570,16 +1567,16 @@ List.Selectable = (function(_super) {
   };
 
   Selectable.prototype.clear_selection = function(silent, force) {
-    var item, _i, _len, _ref1;
+    var item, _i, _len, _ref;
     if (silent == null) {
       silent = false;
     }
     if (force == null) {
       force = false;
     }
-    _ref1 = this.list.items;
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
+    _ref = this.list.items;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
       if (item.enabled || force) {
         this.deselect_item(item);
       }
@@ -1590,16 +1587,16 @@ List.Selectable = (function(_super) {
   };
 
   Selectable.prototype.select_all = function(silent, force) {
-    var item, _i, _len, _ref1;
+    var item, _i, _len, _ref;
     if (silent == null) {
       silent = false;
     }
     if (force == null) {
       force = false;
     }
-    _ref1 = this.list.items;
-    for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-      item = _ref1[_i];
+    _ref = this.list.items;
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      item = _ref[_i];
       if (item.enabled || force) {
         this.select_item(item);
       }
@@ -1619,6 +1616,7 @@ List.Selectable = (function(_super) {
   };
 
   Selectable.prototype.selected_item = function() {
+    var _ref;
     _ref = this.list.selected();
     if (_ref.length) {
       return _ref[0];
@@ -1634,6 +1632,7 @@ List.Selectable = (function(_super) {
   };
 
   Selectable.prototype.selected_record = function() {
+    var _ref;
     _ref = this.list.selected_records();
     if (_ref.length) {
       return _ref[0];
@@ -1652,50 +1651,49 @@ List.Selectable = (function(_super) {
 
 module.exports = List.Selectable;
 
-
 }});
 
-require.define({'pieces-list/plugins/list/sortable': function(exports, require, module) {
+;require.define({'pieces-list/plugins/list/sortable': function(exports, require, module) {
   'use strict';
-var List, ListEvent, Plugin, utils, _ref,
+var List, ListEvent, Plugin, utils,
   __hasProp = {}.hasOwnProperty,
   __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
-Plugin = require('pieces-core').Plugin;
+Plugin = pi.Plugin;
 
 List = require('../../components/list');
 
 ListEvent = require('../../components/events/list_events');
 
-utils = require('pieces-core').utils;
+utils = pi.utils;
 
 List.Sortable = (function(_super) {
   __extends(Sortable, _super);
 
   function Sortable() {
-    _ref = Sortable.__super__.constructor.apply(this, arguments);
-    return _ref;
+    return Sortable.__super__.constructor.apply(this, arguments);
   }
 
   Sortable.prototype.id = 'sortable';
 
   Sortable.prototype.initialize = function(list) {
-    var param, _fn, _i, _len, _ref1,
-      _this = this;
+    var param, _fn, _i, _len, _ref;
     this.list = list;
     Sortable.__super__.initialize.apply(this, arguments);
     if (this.list.options.sort != null) {
       this._prevs = [];
-      _ref1 = this.list.options.sort.split(",");
-      _fn = function(param) {
-        var data, key, order, _ref2;
-        data = {};
-        _ref2 = param.split(":"), key = _ref2[0], order = _ref2[1];
-        data[key] = order;
-        return _this._prevs.push(data);
-      };
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        param = _ref1[_i];
+      _ref = this.list.options.sort.split(",");
+      _fn = (function(_this) {
+        return function(param) {
+          var data, key, order, _ref1;
+          data = {};
+          _ref1 = param.split(":"), key = _ref1[0], order = _ref1[1];
+          data[key] = order;
+          return _this._prevs.push(data);
+        };
+      })(this);
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        param = _ref[_i];
         _fn(param);
       }
       this._compare_fun = function(a, b) {
@@ -1703,16 +1701,24 @@ List.Sortable = (function(_super) {
       };
     }
     this.list.delegate_to(this, 'sort');
-    this.list.on(ListEvent.Update, (function(e) {
-      return _this.item_updated(e.data.item);
-    }), this, function(e) {
-      return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
-    });
-    this.list.on(ListEvent.Update, (function(e) {
-      return _this.resort();
-    }), this, function(e) {
-      return (e.data.type === ListEvent.Load) && e.target === _this.list;
-    });
+    this.list.on(ListEvent.Update, ((function(_this) {
+      return function(e) {
+        return _this.item_updated(e.data.item);
+      };
+    })(this)), this, (function(_this) {
+      return function(e) {
+        return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
+      };
+    })(this));
+    this.list.on(ListEvent.Update, ((function(_this) {
+      return function(e) {
+        return _this.resort();
+      };
+    })(this)), this, (function(_this) {
+      return function(e) {
+        return (e.data.type === ListEvent.Load) && e.target === _this.list;
+      };
+    })(this));
     return this;
   };
 
@@ -1788,8 +1794,7 @@ List.Sortable = (function(_super) {
 
 module.exports = List.Sortable;
 
-
 }});
 
-
+;
 //# sourceMappingURL=pieces.list.js.map
