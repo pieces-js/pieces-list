@@ -151,6 +151,7 @@ exports.startServer = function(port, path, callback){
 
   app.patch('/users/:id', function(req,res){
     params = req.body
+    console.log('update: ', req.params, req.body);
     if(usr=users_by_id[req.params.id])
       res.json({user: {name: params.name||usr.name,age: params.age||usr.age, id: usr.id}})
     else
