@@ -24,7 +24,7 @@ describe "Controller.Listable", ->
           <div>
             <h1 class="pi" pid="title"></h1> 
           </div>
-          <div class="pi pi-action-list" data-component="active_list" data-listen-create="true" data-plugins="restful" data-rest="test_users" pid="list">
+          <div class="pi pi-action-list" data-component="active_list" data-plugins="restful(create:true,rest:'test_users')" pid="list">
             <ul class="list">
               <script class="pi-renderer">
                 <div class='item'>{{ name }}<span class="age">{{age}}</span></div>
@@ -43,14 +43,14 @@ describe "Controller.Listable", ->
 
   it "#index", (done) ->
     example.index().then( ->
-      expect(example.view.list.size()).to.eq 15
+      expect(example.view.list.size).to.eq 15
       done()
     ).catch(done)
 
   describe "querying", ->
     it "#search", (done) ->
       example.search('jo').then( ->
-        expect(example.view.list.size()).to.eq 3
+        expect(example.view.list.size).to.eq 3
         done()     
       ).catch(done)
 
@@ -64,22 +64,22 @@ describe "Controller.Listable", ->
     it "#filter", (done) ->
       example.filter(age: 33).then(
         =>
-          expect(example.view.list.size()).to.eq 4
+          expect(example.view.list.size).to.eq 4
           done()  
       ).catch(done)
 
     it "work with series", (done) ->
       example.search('k').then(
         =>
-          expect(example.view.list.size()).to.eq 5
+          expect(example.view.list.size).to.eq 5
           expect(example.view.list.searchable.searching).to.be.true
           example.filter(age:21).then(
             =>
-              expect(example.view.list.size()).to.eq 3
+              expect(example.view.list.size).to.eq 3
               expect(example.view.list.searchable.searching).to.be.true
               example.sort([{name: 'asc'}]).then(
                 => 
-                  expect(example.view.list.size()).to.eq 3
+                  expect(example.view.list.size).to.eq 3
                   expect(example.view.list.searchable.searching).to.be.true
                   expect(example.view.list.items[0].record.name).to.eq 'klara'
                   done()
@@ -92,7 +92,7 @@ describe "Controller.Listable", ->
       example.filter(age:21)
       example.sort([{name: 'asc'}]).then(
         => 
-          expect(example.view.list.size()).to.eq 3
+          expect(example.view.list.size).to.eq 3
           expect(example.view.list.searchable.searching).to.be.true
           expect(example.view.list.items[0].record.name).to.eq 'klara'
           done()
@@ -102,21 +102,21 @@ describe "Controller.Listable", ->
     it "work with series (and clear scope)", (done) ->
       example.filter(age: 33).then(
         =>
-          expect(example.view.list.size()).to.eq 4
+          expect(example.view.list.size).to.eq 4
           expect(example.view.list.searchable.searching).to.be.false
           example.search('h').then(
             =>
-              expect(example.view.list.size()).to.eq 3
+              expect(example.view.list.size).to.eq 3
               expect(example.view.list.searchable.searching).to.be.true
               expect(example.view.list.filterable.filtered).to.be.true
               example.filter(null).then(
                 => 
-                  expect(example.view.list.size()).to.eq 5
+                  expect(example.view.list.size).to.eq 5
                   expect(example.view.list.searchable.searching).to.be.true
                   expect(example.view.list.filterable.filtered).to.be.false
                   example.search('').then(
                     =>
-                      expect(example.view.list.size()).to.eq 15
+                      expect(example.view.list.size).to.eq 15
                       expect(example.view.list.searchable.searching).to.be.false
                       expect(example.view.list.filterable.filtered).to.be.false
                       done()
@@ -127,22 +127,22 @@ describe "Controller.Listable", ->
 
     describe "resources", ->
       it "create item", (done) ->
-        was = example.view.list.size()
+        was = example.view.list.size
         TestUsers.create({name:'vasya', age: 25}).then(
           (data) =>
             expect(data.user.name).to.eq 'vasya'
             expect(data.user.age).to.eq 25
-            expect(example.view.list.size()).to.eq was+1
+            expect(example.view.list.size).to.eq was+1
             done()
         ).catch(done)
 
       it "destroy item", (done) ->
         example.index().then(
           => 
-            was = example.view.list.size()
+            was = example.view.list.size
             TestUsers.first().destroy().then(
               (data) =>
-                expect(example.view.list.size()).to.eq was-1
+                expect(example.view.list.size).to.eq was-1
                 done()
             )
         ).catch(done)
@@ -150,10 +150,10 @@ describe "Controller.Listable", ->
       it "update item", (done) ->
         example.sort([{age: 'desc'}]).then(
           => 
-            was = example.view.list.size()
+            was = example.view.list.size
             item = example.view.list.items[was-1].record
             item.set({age: 100})
-            expect(example.view.list.size()).to.eq was
+            expect(example.view.list.size).to.eq was
             expect(example.view.list.items[0].record.age).to.eq 100
             done()
         ).catch(done)

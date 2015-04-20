@@ -17,12 +17,12 @@ _is_continuation = (prev, params) ->
 class List.Filterable extends Plugin
   id: 'filterable'
 
-  initialize: (@list) ->
+  initialize: ->
     super
-    @list.delegate_to @, 'filter'
-    @list.on ListEvent.Update, ((e) => @item_updated(e.data.item)), 
+    @target.delegate_to @, 'filter'
+    @target.on ListEvent.Update, ((e) => @item_updated(e.data.item)), 
       @, 
-      (e) => ((e.data.type is ListEvent.ItemAdded or e.data.type is ListEvent.ItemUpdated) and e.data.item.host is @list) 
+      (e) => ((e.data.type is ListEvent.ItemAdded or e.data.type is ListEvent.ItemUpdated) and e.data.item.host is @target) 
     @
   
   item_updated: (item) ->
@@ -34,7 +34,7 @@ class List.Filterable extends Plugin
     if @matcher(item)
       return
     else if @filtered
-      @list.remove_item item, true, false
+      @target.remove_item item, true, false
 
     false
 
@@ -44,18 +44,18 @@ class List.Filterable extends Plugin
   start_filter: () ->
     return if @filtered
     @filtered = true
-    @list.addClass Klass.FILTERED
-    @_all_items = @list.items.slice()
+    @target.addClass Klass.FILTERED
+    @_all_items = @target.items.slice()
     @_prevf = {}
 
   stop_filter: (rollback=true) ->
     return unless @filtered
     @filtered = false
-    @list.removeClass Klass.FILTERED
-    @list.data_provider(@all_items(), false, false) if rollback
+    @target.removeClass Klass.FILTERED
+    @target.data_provider(@all_items(), false, false) if rollback
     @_all_items = null
     @matcher = null
-    @list.trigger ListEvent.Filtered, false
+    @target.trigger ListEvent.Filtered, false
 
 
   # Filter list items.
@@ -67,15 +67,15 @@ class List.Filterable extends Plugin
 
     @start_filter() unless @filtered
 
-    scope = if _is_continuation(@_prevf, params) then @list.items.slice() else @all_items()
+    scope = if _is_continuation(@_prevf, params) then @target.items.slice() else @all_items()
 
     @_prevf = params
 
     @matcher = utils.matchers.object_ext record: params
 
     _buffer = (item for item in scope when @matcher(item))
-    @list.data_provider(_buffer, false, false)
+    @target.data_provider(_buffer, false, false)
 
-    @list.trigger ListEvent.Filtered, true
+    @target.trigger ListEvent.Filtered, true
 
 module.exports = List.Filterable

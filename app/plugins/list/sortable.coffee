@@ -7,12 +7,12 @@ utils = pi.utils
 # Add 'sort(field,order)' method to list
 class List.Sortable extends Plugin
   id: 'sortable'
-  initialize: (@list) ->
+  initialize: (@target) ->
     super
     # set initial sort order (e.g. 'key1:desc,key2:asc')
-    if @list.options.sort?
+    if @target.options.sort?
       @_prevs = []
-      for param in @list.options.sort.split(",")
+      for param in @target.options.sort.split(",")
         do(param) =>
           data = {}
           [key,order] = param.split(":")
@@ -20,26 +20,26 @@ class List.Sortable extends Plugin
           @_prevs.push data
       @_compare_fun = (a,b) -> utils.keys_compare a.record, b.record, @_prevs
 
-    @list.delegate_to @, 'sort'
-    @list.on ListEvent.Update, ((e) => @item_updated(e.data.item)), @, (e) => ((e.data.type is ListEvent.ItemAdded or e.data.type is ListEvent.ItemUpdated) and e.data.item.host is @list) 
-    @list.on ListEvent.Update, ((e) => @resort()), @, (e) => ((e.data.type is ListEvent.Load) and e.target is @list) 
+    @target.delegate_to @, 'sort'
+    @target.on ListEvent.Update, ((e) => @item_updated(e.data.item)), @, (e) => ((e.data.type is ListEvent.ItemAdded or e.data.type is ListEvent.ItemUpdated) and e.data.item.host is @target) 
+    @target.on ListEvent.Update, ((e) => @resort()), @, (e) => ((e.data.type is ListEvent.Load) and e.target is @target) 
     @
 
   item_updated: (item) ->
     return false unless @_compare_fun
-    @_bisect_sort item, 0, @list.size()-1
+    @_bisect_sort item, 0, @target.size - 1
     false
 
 
   _bisect_sort: (item, left, right) ->
     if right-left < 2
-      if @_compare_fun(item,@list.items[left])>0
-        @list.move_item(item,right)
+      if @_compare_fun(item,@target.items[left])>0
+        @target.move_item(item,right)
       else
-        @list.move_item(item,left)  
+        @target.move_item(item,left)  
       return
     i = (left+(right-left)/2)|0
-    a = @list.items[i]
+    a = @target.items[i]
     if @_compare_fun(item,a)>0
       left = i
     else
@@ -55,8 +55,8 @@ class List.Sortable extends Plugin
   resort: ->
     return false unless @_compare_fun
 
-    @list.items.sort @_compare_fun
-    @list.data_provider(@list.items.slice(),true,false)
+    @target.items.sort @_compare_fun
+    @target.data_provider(@target.items.slice(),true,false)
 
   sort: (sort_params) ->
     return unless sort_params?
@@ -65,16 +65,16 @@ class List.Sortable extends Plugin
    
     @_compare_fun = (a,b) -> utils.keys_compare a.record, b.record, sort_params
 
-    @list.items.sort @_compare_fun
+    @target.items.sort @_compare_fun
 
-    @list.data_provider(@list.items.slice(),true,false)
-    @list.trigger ListEvent.Sorted, sort_params
+    @target.data_provider(@target.items.slice(),true,false)
+    @target.trigger ListEvent.Sorted, sort_params
 
   sorted: (sort_params) ->
     return unless sort_params?
     sort_params = utils.to_a sort_params
     @_prevs = sort_params
     @_compare_fun = (a,b) -> utils.keys_compare a.record, b.record, sort_params
-    @list.trigger ListEvent.Sorted, sort_params
+    @target.trigger ListEvent.Sorted, sort_params
 
 module.exports = List.Sortable

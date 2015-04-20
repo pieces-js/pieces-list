@@ -4,15 +4,19 @@ ListEvent = require './events/list_events'
 Nod = pi.Nod
 utils = pi.utils
 Klass = require './utils/klass'
-Renderable = Base.Renderable
 
 # Basic list component
 class List extends Base
-  @include_plugins Renderable
-
   merge_classes: [Klass.DISABLED, Klass.ACTIVE, Klass.HIDDEN]
 
-  preinitialize: () ->
+  @active_property @::, 'size', default: 0
+  @active_property @::, 
+                  'empty', 
+                  default: true, 
+                  class: Klass.EMPTY
+                  event: ListEvent.Empty
+
+  preinitialize: ->
     super
     @list_klass = @options.list_klass || Klass.LIST
     @item_klass = @options.item_klass || Klass.LIST_ITEM
@@ -20,20 +24,22 @@ class List extends Base
     @items = []
     @buffer = document.createDocumentFragment()
 
-  initialize: () ->
+  initialize: ->
     super
     @items_cont = @find(".#{ @list_klass }") || @
     @parse_html_items()
+    @
 
-  postinitialize: () ->
-    @_check_empty()
+  postinitialize: ->
+    super
+    @_invalidate_size()
     unless @options.noclick?
       @listen ".#{ @item_klass }", 'click', (e) =>  
         unless utils.is_clickable(e.origTarget)
-          if  @_item_clicked(e.target) 
+          if @_item_clicked(e.target) 
             e.cancel()
   
-  parse_html_items: () ->
+  parse_html_items: ->
     for node in @items_cont.find_cut(".#{ @item_klass }") 
       do (node) =>   
         @add_item Nod.create(node), true
@@ -43,12 +49,12 @@ class List extends Base
   # @params [Array, Null] data if null then clear list
 
   data_provider: (data = null, silent = false, remove = true) ->
-    @clear(silent,remove) if @items.length  
+    @clear(silent, remove) if @items.length  
 
     if data?
       @add_item(item,true) for item in data
     
-    @update('load',silent)
+    @update('load', silent)
     @
 
   add_item: (data, silent = false) ->
@@ -57,9 +63,9 @@ class List extends Base
     
     @items.push item
 
-    @_check_empty()
-
     unless silent then @items_cont.append(item) else @buffer.appendChild(item.node)
+
+    @_invalidate_size() unless silent
 
     @trigger(ListEvent.Update, {type: ListEvent.ItemAdded, item:item}) unless silent
     item
@@ -71,7 +77,7 @@ class List extends Base
           
     item = @_create_item data, index
     @items.splice(index,0,item)
-    
+
     _after = @items[index+1]
     
     # save item index in DOM element
@@ -81,12 +87,14 @@ class List extends Base
 
     @_need_update_indeces = true
 
+    @_invalidate_size()
+
     unless silent
       @_update_indeces()
       @trigger(ListEvent.Update, {type: ListEvent.ItemAdded, item:item})
     item
 
-  remove_item: (item,silent = false, destroy = true) ->
+  remove_item: (item, silent = false, destroy = true) ->
     index = @items.indexOf(item)
     if index > -1
       @items.splice(index,1)
@@ -95,7 +103,7 @@ class List extends Base
       else
         item.detach()
 
-      @_check_empty()
+      @_invalidate_size()
 
       @_need_update_indeces = true
 
@@ -106,7 +114,7 @@ class List extends Base
     else
       false
 
-  remove_item_at: (index,silent = false) ->
+  remove_item_at: (index, silent = false) ->
     if @items.length-1 < index
       return
     
@@ -115,7 +123,7 @@ class List extends Base
 
   remove_items: (items) ->
     for item in items
-      @remove_item(item,true)
+      @remove_item(item, true)
     @update()
     return
 
@@ -126,7 +134,7 @@ class List extends Base
   #  3. Update item record (by extending it with new item data (overwriting))
 
   update_item: (item, data, silent=false) ->
-    new_item = @_renderer.render data, false
+    new_item = @renderer.render data, false
 
     # update associated record
     utils.extend item.record, new_item.record, true
@@ -184,21 +192,18 @@ class List extends Base
   records: ->
     @items.map((item) -> item.record)
 
-  size: () ->
-    @items.length
-
   update: (type, silent = false) ->
     @_flush_buffer()
     @_update_indeces() if @_need_update_indeces
-    @_check_empty(silent)
+    @_invalidate_size()
     @trigger(ListEvent.Update, {type: type}) unless silent
 
   clear: (silent = false, remove = true) ->
     @items_cont.detach_children() unless remove
     @items_cont.remove_children() if remove
     @items.length = 0
+    @_invalidate_size()
     @trigger(ListEvent.Update, {type: ListEvent.Clear}) unless silent
-    @_check_empty(silent)
 
   _update_indeces: ->
     for item,i in @items
@@ -206,16 +211,9 @@ class List extends Base
       item.record.$num = i+1
     @_need_update_indeces = false
 
-  _check_empty: (silent = false) ->
-    if !@empty and @items.length is 0
-      @addClass Klass.EMPTY
-      @empty = true
-      @trigger(ListEvent.Empty, true) unless silent
-    else if @empty and @items.length > 0
-      @removeClass Klass.EMPTY
-      @empty = false
-      @trigger(ListEvent.Empty, false) unless silent
-    
+  _invalidate_size: ->
+    @size = @items.length
+    @empty = @size is 0
 
   _create_item: (data={},index) ->
     if data instanceof Nod and data.is_list_item
@@ -231,7 +229,7 @@ class List extends Base
     else
       data.$index = index
       data.$num = index+1
-    item = @_renderer.render data, true, @
+    item = @renderer.render data, true, @
     return unless item?
     item.record ||={}
     item.is_list_item = true

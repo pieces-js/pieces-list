@@ -32,13 +32,13 @@ describe "List", ->
 
   describe "basics", ->
     it "parse list items", ->
-      expect(list.size()).to.eq 3
+      expect(list.size).to.eq 3
 
     it "add item", ->
       item = Nod.create('<li class="item" data-id="4" data-key="new">New</li>')
       el = list.add_item item
       expect(el.record.$index).to.eq 3
-      expect(list.size()).to.eq 4
+      expect(list.size).to.eq 4
       expect(test_div.find('.test').last('.item').text()).to.eq 'New'
 
     it "add item at index", ->
@@ -46,7 +46,7 @@ describe "List", ->
       el = list.add_item_at item, 0
       expect(el.record.$index).to.eq 0
       expect(list.items[1].record.$index).to.eq 1
-      expect(list.size()).to.eq 4
+      expect(list.size).to.eq 4
       expect(test_div.find('.test').first('.item').text()).to.eq 'New'
 
     it "trigger update event on add", (done) ->
@@ -60,13 +60,13 @@ describe "List", ->
 
     it "remove element at", ->
       list.remove_item_at 0
-      expect(list.size()).to.eq 2
+      expect(list.size).to.eq 2
       expect(list.items[1].record.$index).to.eq 1
       expect(test_div.find('.test').first('.item').data('id')).to.eq 2
 
     it "remove many items", ->
       list.remove_items [list.items[0],list.items[2]]
-      expect(list.size()).to.eq 1
+      expect(list.size).to.eq 1
       expect(test_div.find('.test').first('.item').data('id')).to.eq 2
 
     it "update element and trigger item's events", (done) ->
@@ -99,7 +99,7 @@ describe "List", ->
       expect(list.items[0]).to.be.an.instanceof $c.Base
 
     it "peicify items nods", ->
-      list._renderer = 
+      list.renderer = 
         render: (data, _, host) ->
           nod = Nod.create("<div>#{ data.title }</div>")
           nod.addClass 'item'
@@ -116,9 +116,55 @@ describe "List", ->
       expect(item.host).to.eq list      
       expect(item.find('.author')).to.be.an.instanceof $c.Base
 
+  describe "bindings", ->
+    describe "size", ->
+      counter = null
+      beforeEach ->
+        list.append """
+          <span class="pi counter" data-bind-text="host.size > 5 ? '5+' : host.size"></span>
+        """
+        list.piecify()
+        counter = list.find('.counter')
+
+      afterEach ->
+        counter.remove()
+
+      it "init", ->
+        expect(counter.text()).to.eq '3'
+
+      it "handle item add", ->
+        item = Nod.create('<li class="item" data-id="4" data-key="new">New</li>')
+        list.add_item item
+        expect(counter.text()).to.eq '4'
+
+      it "handle remove item", ->
+        list.remove_item_at 1
+        expect(counter.text()).to.eq '2'
+
+      it "handle clear", ->
+        list.clear()
+        expect(counter.text()).to.eq '0'
+
+      it "handle data_provider", ->
+        list.renderer = 
+          render: (data) ->
+              nod = Nod.create("<div>#{ data.name }</div>")
+              nod.addClass 'item'
+              nod.append "<span class='author'>#{ data.author }</span>"
+              nod.record = data
+              nod
+        list.data_provider []
+        expect(counter.text()).to.eq '0'
+        list.data_provider [ 
+          {id:1, name: 'Element 1', author: 'John'},
+          {id:2, name: 'Element 2', author: 'Bob'},
+          {id:3, name: 'Element 3', author: 'John'} 
+        ]
+        expect(counter.text()).to.eq '3'
+
   describe "renderers", ->
     beforeEach ->
-      list._renderer = 
+      list.renderer = 
         render: (data) ->
             nod = Nod.create("<div>#{ data.name }</div>")
             nod.addClass 'item'

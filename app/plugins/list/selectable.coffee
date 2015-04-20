@@ -10,20 +10,20 @@ Nod = pi.Nod
 # Highlights selected elements with Klass.SELECTED class 
 class List.Selectable extends Plugin
   id: 'selectable'
-  initialize: (@list) ->
+  initialize: ->
     super
-    @list.merge_classes.push Klass.SELECTED
+    @target.merge_classes.push Klass.SELECTED
       
-    @type(@list.options.select_type || 'radio') 
+    @type(@options.type || 'radio') 
     
-    @enable() unless @list.options.no_select?
+    @enable()
 
-    for item in @list.items 
+    for item in @target.items 
       if item.hasClass Klass.SELECTED
         item.__selected__ = true
 
-    @list.delegate_to @, 'clear_selection','selected','selected_item','select_all','select_item', 'selected_records', 'selected_record', 'deselect_item','toggle_select', 'selected_size'
-    @list.on ListEvent.Update, (
+    @target.delegate_to @, 'clear_selection','selected','selected_item','select_all','select_item', 'selected_records', 'selected_record', 'deselect_item','toggle_select', 'selected_size'
+    @target.on ListEvent.Update, (
       (e) => 
         @_selected = null
         @_check_selected()
@@ -34,26 +34,26 @@ class List.Selectable extends Plugin
   enable: ->
     unless @enabled
       @enabled = true
-      @list.on ListEvent.ItemClick, @item_click_handler()
+      @target.on ListEvent.ItemClick, @item_click_handler()
 
   disable: ->
     if @enabled
       @enabled = false
-      @list.off ListEvent.ItemClick, @item_click_handler()
+      @target.off ListEvent.ItemClick, @item_click_handler()
 
   type: (value) ->
     @is_radio = !!value.match('radio')
     @is_check = !!value.match('check')
 
   item_click_handler: (e) ->
-    @list.toggle_select e.data.item, true
+    @target.toggle_select e.data.item, true
     @_check_selected() if e.data.item.enabled
     return      
 
   @event_handler 'item_click_handler'
 
   _check_selected: ->
-    if @list.selected().length then @list.trigger(ListEvent.Selected, @list.selected()) else @list.trigger(ListEvent.SelectionCleared)
+    if @target.selected().length then @target.trigger(ListEvent.Selected, @target.selected()) else @target.trigger(ListEvent.SelectionCleared)
 
   # 'force' defines whether function is triggered by user interaction
   select_item: (item, force = false) ->
@@ -76,12 +76,12 @@ class List.Selectable extends Plugin
     if item.__selected__ then @deselect_item(item,force) else @select_item(item,force)
 
   clear_selection: (silent = false, force = false) ->
-    @deselect_item(item) for item in @list.items when (item.enabled or force)
-    @list.trigger(ListEvent.SelectionCleared) unless silent
+    @deselect_item(item) for item in @target.items when (item.enabled or force)
+    @target.trigger(ListEvent.SelectionCleared) unless silent
   
   select_all: (silent = false, force = false) ->
-    @select_item(item) for item in @list.items when (item.enabled or force)
-    @list.trigger(ListEvent.Selected, @selected()) if @selected().length and not silent
+    @select_item(item) for item in @target.items when (item.enabled or force)
+    @target.trigger(ListEvent.Selected, @selected()) if @selected().length and not silent
 
 
   # Return selected items
@@ -89,21 +89,21 @@ class List.Selectable extends Plugin
 
   selected: () ->
     unless @_selected?
-      @_selected = @list.where(__selected__: true)
+      @_selected = @target.where(__selected__: true)
     @_selected
 
   selected_item: ()->
-    _ref = @list.selected()
+    _ref = @target.selected()
     if _ref.length then _ref[0] else null
 
   selected_records: ->
-    @list.selected().map((item)->item.record)
+    @target.selected().map((item)->item.record)
 
   selected_record: ->
-    _ref = @list.selected_records()
+    _ref = @target.selected_records()
     if _ref.length then _ref[0] else null
 
   selected_size: ->
-    @list.selected().length
+    @target.selected().length
 
 module.exports = List.Selectable

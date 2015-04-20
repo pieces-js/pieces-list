@@ -11,31 +11,29 @@ Nod = pi.Nod
 # All sublists should have class 'pi-list'
 class List.NestedSelect extends Selectable
   id: 'nested_select'
-  initialize: (@list) ->
+  initialize: ->
     Plugin::initialize.apply @, arguments
 
-    @nested_klass = @list.options.nested_klass || Klass.NESTED_LIST
+    @nested_klass = @options.klass || Klass.NESTED_LIST
 
-    @selectable = @list.selectable || {select_all: utils.pass, clear_selection: utils.pass, type: utils.pass, _selected_item: null, enable: utils.pass, disable: utils.pass} 
-    @list.delegate_to @, 'clear_selection', 'select_all', 'selected', 'where', 'select_item', 'deselect_item'
+    @selectable = @target.selectable || {select_all: utils.pass, clear_selection: utils.pass, type: utils.pass, _selected_item: null, enable: utils.pass, disable: utils.pass} 
+    @target.delegate_to @, 'clear_selection', 'select_all', 'selected', 'where', 'select_item', 'deselect_item'
 
-    unless @list.has_selectable is true
-      @list.delegate_to @, 'selected_records', 'selected_record', 'selected_item', 'selected_size'
+    unless @target.has_selectable is true
+      @target.delegate_to @, 'selected_records', 'selected_record', 'selected_item', 'selected_size'
 
     @enabled = true
 
-    @disable() if @list.options.no_select?
+    @type(@options.type || "")
 
-    @type @list.options.nested_select_type||""
-
-    @list.on [ListEvent.Selected, ListEvent.SelectionCleared], (e) =>
+    @target.on [ListEvent.Selected, ListEvent.SelectionCleared], (e) =>
       if @_watching_radio and e.type is ListEvent.Selected
-          if e.target is @list
+          if e.target is @target
             item = @selectable._selected_item
           else
             item = e.data[0].host.selectable._selected_item
           @update_radio_selection item
-      if e.target != @list
+      if e.target != @target
         e.cancel()
         @_check_selected()
       else
@@ -46,14 +44,14 @@ class List.NestedSelect extends Selectable
     unless @enabled
       @enabled = true
       @selectable.enable()
-      for item in @list.find_cut(".#{@nested_klass}")
+      for item in @target.find_cut(".#{@nested_klass}")
         Nod.fetch(item._nod)?.selectable?.enable()        
 
   disable: ->
     if @enabled
       @enabled = false
       @selectable.disable()
-      for item in @list.find_cut(".#{@nested_klass}")
+      for item in @target.find_cut(".#{@nested_klass}")
         Nod.fetch(item._nod)?.selectable?.disable()        
 
 
@@ -72,8 +70,8 @@ class List.NestedSelect extends Selectable
       item
 
   where: (query) ->
-    ref = List::where.call(@list, query)
-    for item in @list.find_cut(".#{@nested_klass}")
+    ref = List::where.call(@target, query)
+    for item in @target.find_cut(".#{@nested_klass}")
       ref = ref.concat(nod.where(query)) if (nod = Nod.fetch(item._nod))
     ref   
 
@@ -93,28 +91,28 @@ class List.NestedSelect extends Selectable
   update_radio_selection: (item) ->
     return if not item or (@_prev_selected_list is item.host)
     @_prev_selected_list = item.host
-    if @list.selected().length > 1
-      @list.clear_selection(true)
+    if @target.selected().length > 1
+      @target.clear_selection(true)
       item.host.select_item item
       return
 
   clear_selection: (silent = false, force = false) ->
     @selectable.clear_selection(silent, force)
-    for item in @list.find_cut(".#{@nested_klass}")
+    for item in @target.find_cut(".#{@nested_klass}")
       Nod.fetch(item._nod)?.clear_selection?(silent)          
-    @list.trigger(ListEvent.SelectionCleared) unless silent
+    @target.trigger(ListEvent.SelectionCleared) unless silent
   
   select_all: (silent = false, force = false) ->
     @selectable.select_all(true, force)
-    for item in @list.find_cut(".#{@nested_klass}")
+    for item in @target.find_cut(".#{@nested_klass}")
       Nod.fetch(item._nod)?.select_all?(true, force)         
     unless silent
       _selected = @selected() 
-      @list.trigger(ListEvent.Selected, _selected) if _selected.length
+      @target.trigger(ListEvent.Selected, _selected) if _selected.length
 
   selected: () ->
     _selected = []
-    for item in @list.items
+    for item in @target.items
       if item.__selected__
         _selected.push item
       if item instanceof List

@@ -34,18 +34,18 @@ describe "List.Searchable", ->
 
     it "search items", ->  
       list.search 'kill'
-      expect(list.size()).to.equal 1
+      expect(list.size).to.equal 1
 
     it "search with discontinuation", ->  
       list.search 'tw'
-      expect(list.size()).to.equal 1
+      expect(list.size).to.equal 1
       list.search 't'
-      expect(list.size()).to.equal 2
+      expect(list.size).to.equal 2
 
     it "start event", (done)->
 
       list.on 'searched', (event) =>
-        expect(list.size()).to.equal 1
+        expect(list.size).to.equal 1
         done()  
 
       list.search 'kill'
@@ -53,7 +53,7 @@ describe "List.Searchable", ->
     it "update event", (done)->
 
       list.on 'searched', (event) =>
-        expect(list.size()).to.equal 1
+        expect(list.size).to.equal 1
         done()  
 
       list.search 'kill'
@@ -61,7 +61,7 @@ describe "List.Searchable", ->
     it "stop event", (done)->
       list.search 'kill'
       list.on 'searched', (event) =>
-        expect(list.size()).to.equal 3
+        expect(list.size).to.equal 3
         done() 
       list.search null
 
@@ -70,15 +70,15 @@ describe "List.Searchable", ->
     it "search within one-selector scope", ->    
       list.searchable.update_scope '.tags'
       list.search 'o'
-      expect(list.size()).to.equal 2
+      expect(list.size).to.equal 2
 
 
     it "search within two-selector scope", ->  
       list.searchable.update_scope '.tags,.notes'
       list.search 'bul'
-      expect(list.size()).to.equal 2
+      expect(list.size).to.equal 2
       list.search 'zo'
-      expect(list.size()).to.equal 1
+      expect(list.size).to.equal 1
 
 
   describe "highlight", ->
@@ -124,18 +124,18 @@ describe "List.Searchable", ->
     it "return all not removed items on search stop", ->  
       list.search 't', true
       list.remove_item_at 0
-      expect(list.size()).to.eq 1
+      expect(list.size).to.eq 1
       list.search ''
-      expect(list.size()).to.eq 2
+      expect(list.size).to.eq 2
 
     it "research after new item added", (done) ->
       list.search 't', true
-      expect(list.size()).to.equal 2
+      expect(list.size).to.equal 2
       list.on 'update', (e) =>
         return unless e.data.type is 'item_added'
-        expect(list.size()).to.equal 3
+        expect(list.size).to.equal 3
         list.search('') 
-        expect(list.size()).to.equal 4
+        expect(list.size).to.equal 4
         done()
       list.add_item pi.Nod.create('''<li class="item" data-id="7" data-key="three" data-val="toast">Tetro<span class="tags">killer,zomby</span><span class="notes">lo</span></li>
             ''')

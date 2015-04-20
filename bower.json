@@ -1,6 +1,6 @@
 {
   "name": "pieces-list",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "author": "Vlad Dem <palkan>",
   "license": "MIT",
   "main": "pieces.list.js",
@@ -12,6 +12,6 @@
     "test"
   ],
   "dependencies": {
-    "pieces-core": "~> 0.4"
+    "pieces-core": "~> 0.4, >= 0.4.3"
   }
 }
