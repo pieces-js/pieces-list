@@ -17,143 +17,245 @@ describe "Controller.Listable", ->
   page = example = null
   test_div = null
 
-  beforeEach ->
-    page = pi.app.page
-    test_div = h.test_cont root, '''
-        <div class="pi" data-controller="| listable('test_users')" pid="test" style="position:relative">
-          <div>
-            <h1 class="pi" pid="title"></h1> 
-          </div>
-          <div class="pi pi-action-list" data-component="active_list" data-plugins="restful(create:true,rest:'test_users')" pid="list">
-            <ul class="list">
-              <script class="pi-renderer">
-                <div class='item'>{{ name }}<span class="age">{{age}}</span></div>
-              </script>
-            </ul>
-          </div> 
-        </div>
-      '''
-    pi.app.reinitialize()
-    example = page._contexts.test
-
   afterEach ->
     page.dispose()
+    test_div.remove()
     TestUsers.clear_all()
     TestUsers.off()
 
-  it "#index", (done) ->
-    example.index().then( ->
-      expect(example.view.list.size).to.eq 15
-      done()
-    ).catch(done)
+  describe "source is resource", ->
+    beforeEach ->
+      page = pi.app.page
+      test_div = h.test_cont root, '''
+          <div class="pi" data-controller="| listable('test_users')" pid="test" style="position:relative">
+            <div>
+              <h1 class="pi" pid="title"></h1> 
+            </div>
+            <div class="pi pi-action-list" data-component="active_list" data-plugins="restful(create:true,rest:'test_users')" pid="list">
+              <ul class="list">
+                <script class="pi-renderer">
+                  <div class='item'>{{ name }}<span class="age">{{age}}</span></div>
+                </script>
+              </ul>
+            </div> 
+          </div>
+        '''
+      pi.app.reinitialize()
+      example = page._contexts.test
 
-  describe "querying", ->
-    it "#search", (done) ->
-      example.search('jo').then( ->
-        expect(example.view.list.size).to.eq 3
-        done()     
+    it "#index", (done) ->
+      example.index().then( ->
+        expect(example.view.list.size).to.eq 15
+        done()
       ).catch(done)
 
-    it "#sort", (done) ->
-      example.sort([{age: 'asc'}]).then(
-        =>
+    describe "querying", ->
+      it "#search", (done) ->
+        example.search('jo').then( ->
+          expect(example.view.list.size).to.eq 3
+          done()     
+        ).catch(done)
+
+      it "#sort", (done) ->
+        example.sort([{age: 'asc'}]).then( ->
           expect(example.view.list.items[0].record.name).to.eq 'luiza'
           done()
-      ).catch(done)   
+        ).catch(done)   
 
-    it "#filter", (done) ->
-      example.filter(age: 33).then(
-        =>
+      it "#filter", (done) ->
+        example.filter(age: 33).then( ->
           expect(example.view.list.size).to.eq 4
           done()  
-      ).catch(done)
+        ).catch(done)
 
-    it "work with series", (done) ->
-      example.search('k').then(
-        =>
+      it "work with series", (done) ->
+        example.search('k').then( ->
           expect(example.view.list.size).to.eq 5
           expect(example.view.list.searchable.searching).to.be.true
-          example.filter(age:21).then(
-            =>
-              expect(example.view.list.size).to.eq 3
-              expect(example.view.list.searchable.searching).to.be.true
-              example.sort([{name: 'asc'}]).then(
-                => 
-                  expect(example.view.list.size).to.eq 3
-                  expect(example.view.list.searchable.searching).to.be.true
-                  expect(example.view.list.items[0].record.name).to.eq 'klara'
-                  done()
-              )
-          )          
-      ).catch(done)
-
-    it "work with queued series", (done) ->
-      example.search('k')
-      example.filter(age:21)
-      example.sort([{name: 'asc'}]).then(
-        => 
+          example.filter(age:21)
+        ).then( ->
+          expect(example.view.list.size).to.eq 3
+          expect(example.view.list.searchable.searching).to.be.true
+          example.sort([{name: 'asc'}])
+        ).then( -> 
           expect(example.view.list.size).to.eq 3
           expect(example.view.list.searchable.searching).to.be.true
           expect(example.view.list.items[0].record.name).to.eq 'klara'
           done()
-      ).catch(done)
+        ).catch(done)
+
+      it "work with queued series", (done) ->
+        example.search('k')
+        example.filter(age:21)
+        example.sort([{name: 'asc'}]).then( -> 
+          expect(example.view.list.size).to.eq 3
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.items[0].record.name).to.eq 'klara'
+          done()
+        ).catch(done)
 
 
-    it "work with series (and clear scope)", (done) ->
-      example.filter(age: 33).then(
-        =>
+      it "work with series (and clear scope)", (done) ->
+        example.filter(age: 33).then( ->
           expect(example.view.list.size).to.eq 4
           expect(example.view.list.searchable.searching).to.be.false
-          example.search('h').then(
-            =>
-              expect(example.view.list.size).to.eq 3
-              expect(example.view.list.searchable.searching).to.be.true
-              expect(example.view.list.filterable.filtered).to.be.true
-              example.filter(null).then(
-                => 
-                  expect(example.view.list.size).to.eq 5
-                  expect(example.view.list.searchable.searching).to.be.true
-                  expect(example.view.list.filterable.filtered).to.be.false
-                  example.search('').then(
-                    =>
-                      expect(example.view.list.size).to.eq 15
-                      expect(example.view.list.searchable.searching).to.be.false
-                      expect(example.view.list.filterable.filtered).to.be.false
-                      done()
-                  )
-              )
-          )          
-      ).catch(done)
+          example.search('h')
+        ).then( ->
+          expect(example.view.list.size).to.eq 3
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.filterable.filtered).to.be.true
+          example.filter(null)
+        ).then( -> 
+          expect(example.view.list.find('mark')).to.not.be.null
+          expect(example.view.list.size).to.eq 5
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.filterable.filtered).to.be.false
+          example.search('')
+        ).then( ->
+          expect(example.view.list.size).to.eq 15
+          expect(example.view.list.searchable.searching).to.be.false
+          expect(example.view.list.filterable.filtered).to.be.false
+          done()
+        ).catch(done)
 
-    describe "resources", ->
-      it "create item", (done) ->
-        was = example.view.list.size
-        TestUsers.create({name:'vasya', age: 25}).then(
-          (data) =>
+      describe "resources", ->
+        was = null
+        it "create item", (done) ->
+          was = example.view.list.size
+          TestUsers.create({name:'vasya', age: 25}).then( (data) ->
             expect(data.user.name).to.eq 'vasya'
             expect(data.user.age).to.eq 25
             expect(example.view.list.size).to.eq was+1
             done()
-        ).catch(done)
+          ).catch(done)
 
-      it "destroy item", (done) ->
-        example.index().then(
-          => 
+        it "destroy item", (done) ->
+          example.index().then( -> 
             was = example.view.list.size
-            TestUsers.first().destroy().then(
-              (data) =>
-                expect(example.view.list.size).to.eq was-1
-                done()
-            )
-        ).catch(done)
+            TestUsers.first().destroy()
+          ).then( (data) ->
+            expect(example.view.list.size).to.eq was-1
+            done()
+          ).catch(done)
 
-      it "update item", (done) ->
-        example.sort([{age: 'desc'}]).then(
-          => 
+        it "update item", (done) ->
+          example.sort([{age: 'desc'}]).then( -> 
             was = example.view.list.size
             item = example.view.list.items[was-1].record
             item.set({age: 100})
             expect(example.view.list.size).to.eq was
             expect(example.view.list.items[0].record.age).to.eq 100
             done()
+          ).catch(done)
+          
+  describe "source is url", ->
+    beforeEach ->
+      page = pi.app.page
+      test_div = h.test_cont root, '''
+          <div class="pi" data-controller="| listable(url:'/users',name:'users')" pid="test" style="position:relative">
+            <div>
+              <h1 class="pi" pid="title"></h1> 
+            </div>
+            <div class="pi pi-action-list" data-component="active_list" data-plugins="restful(create:true,rest:'test_users')" pid="list">
+              <ul class="list">
+                <script class="pi-renderer">
+                  <div class='item'>{{ name }}<span class="age">{{age}}</span></div>
+                </script>
+              </ul>
+            </div> 
+          </div>
+        '''
+      pi.app.reinitialize()
+      example = page._contexts.test
+
+    it "#index", (done) ->
+      example.index().then( ->
+        expect(example.view.list.size).to.eq 15
+        done()
+      ).catch(done)
+
+    describe "querying", ->
+      it "#search", (done) ->
+        example.search('jo').then( ->
+          expect(example.view.list.size).to.eq 3
+          done()     
         ).catch(done)
+
+      it "#sort", (done) ->
+        example.sort([{age: 'asc'}]).then( ->
+          expect(example.view.list.items[0].record.name).to.eq 'luiza'
+          done()
+        ).catch(done)   
+
+      it "#filter", (done) ->
+        example.filter(age: 33).then( ->
+          expect(example.view.list.size).to.eq 4
+          done()  
+        ).catch(done)
+
+      it "normal series", (done) ->
+        example.search('k').then( ->
+          expect(example.view.list.size).to.eq 5
+          expect(example.view.list.searchable.searching).to.be.true
+          example.filter(age:21)
+        ).then( ->
+          expect(example.view.list.size).to.eq 3
+          expect(example.view.list.searchable.searching).to.be.true
+          example.sort([{name: 'asc'}])
+        ).then( -> 
+          expect(example.view.list.size).to.eq 3
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.items[0].record.name).to.eq 'klara'
+          done()
+        ).catch(done)
+
+      it "queued series", (done) ->
+        example.search('k')
+        example.filter(age:21)
+        example.sort([{name: 'asc'}]).then( -> 
+          expect(example.view.list.size).to.eq 3
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.items[0].record.name).to.eq 'klara'
+          done()
+        ).catch(done)
+
+
+      it "series (and clear scope)", (done) ->
+        example.filter(age: 33).then( ->
+          expect(example.view.list.size).to.eq 4
+          expect(example.view.list.searchable.searching).to.be.false
+          example.search('h')
+        ).then( ->
+          expect(example.view.list.size).to.eq 3
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.filterable.filtered).to.be.true
+          example.filter(null)
+        ).then( -> 
+          expect(example.view.list.find('mark')).to.not.be.null
+          expect(example.view.list.size).to.eq 5
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.filterable.filtered).to.be.false
+          example.search('')
+        ).then( ->
+          expect(example.view.list.size).to.eq 15
+          expect(example.view.list.searchable.searching).to.be.false
+          expect(example.view.list.filterable.filtered).to.be.false
+          done()
+        ).catch(done)
+
+       it "series (with error)", (done) ->
+        example.search('u').then( ->
+          expect(example.view.list.size).to.eq 6
+          example.filter('q') # error
+        ).catch((e) ->
+          expect(example.view.list.size).to.eq 6
+          expect(example.view.list.searchable.searching).to.be.true
+          expect(example.view.list.filterable.filtered).to.not.be.true
+          example.search('')
+        ).then( -> 
+          expect(example.view.list.size).to.eq 15
+          expect(example.view.list.find('mark')).to.be.null
+          expect(example.view.list.searchable.searching).to.be.false
+          done()
+        ).catch(done)
+

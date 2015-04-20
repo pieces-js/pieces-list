@@ -7,12 +7,12 @@ utils = pi.utils
 # Add 'sort(field,order)' method to list
 class List.Sortable extends Plugin
   id: 'sortable'
-  initialize: (@target) ->
+  initialize: ->
     super
     # set initial sort order (e.g. 'key1:desc,key2:asc')
-    if @target.options.sort?
+    if @options.param?
       @_prevs = []
-      for param in @target.options.sort.split(",")
+      for param in @options.param.split(",")
         do(param) =>
           data = {}
           [key,order] = param.split(":")
@@ -29,7 +29,6 @@ class List.Sortable extends Plugin
     return false unless @_compare_fun
     @_bisect_sort item, 0, @target.size - 1
     false
-
 
   _bisect_sort: (item, left, right) ->
     if right-left < 2
@@ -49,7 +48,6 @@ class List.Sortable extends Plugin
   # clear compare_fun
   clear: ->
     @_compare_fun = null
-
 
   # sort list with current compare_fun
   resort: ->

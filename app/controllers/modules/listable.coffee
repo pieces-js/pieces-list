@@ -9,13 +9,22 @@ _url_rxp = /^(http|\/)/
 # Provides methods to work with list of elements
 class Base.Listable extends Core
   @mixedin: (owner) ->
-    options = ''+owner.options.modules.listable
-    if options.match(_url_rxp)
-      owner.source = options
+    options = owner.options.modules.listable
+
+    if typeof options is 'string'
+      source = options
+      options = {}
+      if source.match(_url_rxp)
+        options.url = source
+      else
+        options.rest = source
+    
+    if options.url
+      owner.source = options.url
       owner.source_type = 'url'
-      owner.source_name = 'items'
+      owner.source_name = options.name || 'items'
     else
-      if (res = utils.obj.get_class_path(pi.resources, options))
+      if (res = utils.obj.get_class_path(pi.resources, options.rest))
         owner.source = res
         owner.source_type = 'resource'
         owner.source_name = res.resources_name
@@ -27,13 +36,16 @@ class Base.Listable extends Core
     unless @_promise?
       @_promise = utils.promise.resolved()
 
+    prev = null
+
     @_promise = @_promise.then( =>
-      @scope.set(params)
+      prev = @scope.set(params)
       if @scope.is_full is true
         utils.promise.resolved()
       else
-        @do_query(@scope.params)
+        @do_query(utils.merge(params, @scope.params))
     ).catch( (e) =>
+      @scope.revert(prev) if prev?
       # cleanup failed promise
       delete @_promise
       throw e
@@ -42,7 +54,7 @@ class Base.Listable extends Core
   # [internal] do resource query or URL query
   do_query: (params) ->
     if @source_type is 'url'
-      pi.Net.get(url, params)
+      pi.Net.get(@source, params)
     else
       @source.fetch(params)
 
@@ -50,7 +62,7 @@ class Base.Listable extends Core
   index: (params) ->
     @query(params).then(
      (data) => 
-        @view.load data[@source_name]
+        @view.load(data[@source_name]) if data?
         data
     )
 
@@ -74,6 +86,7 @@ class Base.Listable extends Core
     @query(sort_params).then(
       (data) =>
         if data?
+          @view.sorted null # first, clear prev sort params
           @view.reload data[@source_name]
           @view.sorted params
         else
@@ -101,7 +114,7 @@ Scope.rules['q'] =
     if new_q?
       # if new query is not null then check whether previous
       # query is a prefix
-      new_q.match(prev_q)?.index == 0
+      prev_q && new_q.match(prev_q)?.index == 0
     else
       # otherwise check whether previous query was not null
       !prev_q

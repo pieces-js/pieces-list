@@ -25,15 +25,15 @@ class Base.Listable extends Core
     @list.sortable.sorted(params) if params?
 
   search: (query) ->
-    @_query = query # store query to highlight after update
+    @_query = query 
     @list.search query, true
 
   searched: (query) ->
+    @_query = query # store query to highlight after update
     @list.searchable.start_search()
     @list.highlight query
     
-    unless query
-      @list.searchable.stop_search(false)
+    @list.searchable.stop_search(false) unless query
 
   filter: (data) ->
     @list.filter data

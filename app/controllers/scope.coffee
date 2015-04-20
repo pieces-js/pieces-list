@@ -36,34 +36,41 @@ class Scope
     @blacklist = utils.arr.uniq(@constructor.blacklist.concat(blacklist))
     @rules = utils.merge(rules, @constructor.rules)
     @_scope = {}
+    @_prev = {}
     @params = {}
 
   _filter_key: (key) ->
     return @blacklist.indexOf(key) < 0 if @blacklist.length
     true
 
-  _merge: (key, val) ->
+  _check: (key, val) ->
     if val is null and @_scope[key]?
       delete @_scope[key]
       @is_full = false
-      return
-    @_scope[key] = @_resolve key, @_scope[key], val
-    return
-
+      return false
+    @_resolve key, @_scope[key], val
+    
   _resolve: (key, old_val, val) ->
-    if @rules[key]?(old_val,val)
-      old_val
+    if @rules[key]?(old_val, val)
+      true
     else
       @is_full = false
-      val
+      @_scope[key] = val
+      false
 
+  # Set new values and return previous scope
   set: (params = {}) ->
+    @_prev = [utils.clone(@_scope), utils.clone(@params)]
+
     (@params[key] = val) for own key, val of params when @_filter_key(key)
 
-    for key, val of @params
-      do =>
-        if @_scope[key] isnt val
-          @_merge(key, val)
+    for own key, val of @params when @_scope[key] isnt val
+      break unless @_check(key, val)
+
+    unless @is_full
+      @_scope[key] = val for own key, val of @params when val isnt null
+
+    @_prev
 
   # Clear scope params and set is_full to false. 
   clear: ->
@@ -85,5 +92,11 @@ class Scope
   reload: ->
     utils.debug "Scope should be reloaded: #{@to_s()}"
     @is_full = false
+
+  # restore scope params to previous values
+  # (when request has failed)
+  revert: (to = @_prev) ->
+    @_scope = utils.clone(to[0])
+    @params = utils.clone(to[1])
 
 module.exports = Scope

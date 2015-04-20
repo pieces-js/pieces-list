@@ -90,8 +90,12 @@ exports.startServer = function(port, path, callback){
       }
       if(req.query.filter)
       {
-        for(key in req.query.filter)
-          all = all.filter(function(u){ return u[key] == req.query.filter[key]});
+        if(typeof req.query.filter != 'object')
+          return res.send(403, 'Forbidden');
+        else{
+          for(key in req.query.filter)
+            all = all.filter(function(u){ return u[key] == req.query.filter[key]});
+        }
       }
 
       if(req.query.sort && req.query.sort.length){
@@ -113,8 +117,8 @@ exports.startServer = function(port, path, callback){
 
       }
 
-      if(req.query.page !=undefined && req.query.per_page !=undefined){
-          res.json(_paginated(all,req.query.page|0,req.query.per_page|0))
+      if(req.query.per_page !=undefined){
+          res.json(_paginated(all,(req.query.page|0)||1,req.query.per_page|0))
           return;
       }
 
