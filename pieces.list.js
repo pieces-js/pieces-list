@@ -1,5 +1,38 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 'use strict';
+var ActiveList, Filterable, List, Searchable, Selectable, Sortable,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+List = require('./list');
+
+Selectable = require('../plugins/list/selectable');
+
+Searchable = require('../plugins/list/searchable');
+
+Sortable = require('../plugins/list/sortable');
+
+Filterable = require('../plugins/list/filterable');
+
+ActiveList = (function(superClass) {
+  extend(ActiveList, superClass);
+
+  function ActiveList() {
+    return ActiveList.__super__.constructor.apply(this, arguments);
+  }
+
+  ActiveList.include_plugins(Selectable, Sortable, Searchable, Filterable);
+
+  return ActiveList;
+
+})(List);
+
+module.exports = ActiveList;
+
+
+
+},{"../plugins/list/filterable":10,"../plugins/list/searchable":15,"../plugins/list/selectable":16,"../plugins/list/sortable":17,"./list":3}],2:[function(require,module,exports){
+'use strict';
 var ListEvent;
 
 ListEvent = {
@@ -23,9 +56,9 @@ module.exports = ListEvent;
 
 
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 'use strict';
-var Base, Klass, List, ListEvent, Nod, Renderable, utils,
+var Base, Klass, List, ListEvent, Nod, utils,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
   hasProp = {}.hasOwnProperty,
   indexOf = [].indexOf || function(item) { for (var i = 0, l = this.length; i < l; i++) { if (i in this && this[i] === item) return i; } return -1; };
@@ -40,8 +73,6 @@ utils = pi.utils;
 
 Klass = require('./utils/klass');
 
-Renderable = Base.Renderable;
-
 List = (function(superClass) {
   extend(List, superClass);
 
@@ -49,9 +80,17 @@ List = (function(superClass) {
     return List.__super__.constructor.apply(this, arguments);
   }
 
-  List.include_plugins(Renderable);
-
   List.prototype.merge_classes = [Klass.DISABLED, Klass.ACTIVE, Klass.HIDDEN];
+
+  List.active_property(List.prototype, 'size', {
+    "default": 0
+  });
+
+  List.active_property(List.prototype, 'empty', {
+    "default": true,
+    "class": Klass.EMPTY,
+    event: ListEvent.Empty
+  });
 
   List.prototype.preinitialize = function() {
     List.__super__.preinitialize.apply(this, arguments);
@@ -64,11 +103,13 @@ List = (function(superClass) {
   List.prototype.initialize = function() {
     List.__super__.initialize.apply(this, arguments);
     this.items_cont = this.find("." + this.list_klass) || this;
-    return this.parse_html_items();
+    this.parse_html_items();
+    return this;
   };
 
   List.prototype.postinitialize = function() {
-    this._check_empty();
+    List.__super__.postinitialize.apply(this, arguments);
+    this._invalidate_size();
     if (this.options.noclick == null) {
       return this.listen("." + this.item_klass, 'click', (function(_this) {
         return function(e) {
@@ -131,11 +172,13 @@ List = (function(superClass) {
       return;
     }
     this.items.push(item);
-    this._check_empty();
     if (!silent) {
       this.items_cont.append(item);
     } else {
       this.buffer.appendChild(item.node);
+    }
+    if (!silent) {
+      this._invalidate_size();
     }
     if (!silent) {
       this.trigger(ListEvent.Update, {
@@ -161,6 +204,7 @@ List = (function(superClass) {
     item.record.$num = index + 1;
     _after.insertBefore(item);
     this._need_update_indeces = true;
+    this._invalidate_size();
     if (!silent) {
       this._update_indeces();
       this.trigger(ListEvent.Update, {
@@ -187,7 +231,7 @@ List = (function(superClass) {
       } else {
         item.detach();
       }
-      this._check_empty();
+      this._invalidate_size();
       this._need_update_indeces = true;
       if (!silent) {
         this._update_indeces();
@@ -228,7 +272,7 @@ List = (function(superClass) {
     if (silent == null) {
       silent = false;
     }
-    new_item = this._renderer.render(data, false);
+    new_item = this.renderer.render(data, false);
     utils.extend(item.record, new_item.record, true);
     item.remove_children();
     item.html(new_item.html());
@@ -290,10 +334,6 @@ List = (function(superClass) {
     });
   };
 
-  List.prototype.size = function() {
-    return this.items.length;
-  };
-
   List.prototype.update = function(type, silent) {
     if (silent == null) {
       silent = false;
@@ -302,7 +342,7 @@ List = (function(superClass) {
     if (this._need_update_indeces) {
       this._update_indeces();
     }
-    this._check_empty(silent);
+    this._invalidate_size();
     if (!silent) {
       return this.trigger(ListEvent.Update, {
         type: type
@@ -324,12 +364,12 @@ List = (function(superClass) {
       this.items_cont.remove_children();
     }
     this.items.length = 0;
+    this._invalidate_size();
     if (!silent) {
-      this.trigger(ListEvent.Update, {
+      return this.trigger(ListEvent.Update, {
         type: ListEvent.Clear
       });
     }
-    return this._check_empty(silent);
   };
 
   List.prototype._update_indeces = function() {
@@ -343,23 +383,9 @@ List = (function(superClass) {
     return this._need_update_indeces = false;
   };
 
-  List.prototype._check_empty = function(silent) {
-    if (silent == null) {
-      silent = false;
-    }
-    if (!this.empty && this.items.length === 0) {
-      this.addClass(Klass.EMPTY);
-      this.empty = true;
-      if (!silent) {
-        return this.trigger(ListEvent.Empty, true);
-      }
-    } else if (this.empty && this.items.length > 0) {
-      this.removeClass(Klass.EMPTY);
-      this.empty = false;
-      if (!silent) {
-        return this.trigger(ListEvent.Empty, false);
-      }
-    }
+  List.prototype._invalidate_size = function() {
+    this.size = this.items.length;
+    return this.empty = this.size === 0;
   };
 
   List.prototype._create_item = function(data, index) {
@@ -383,7 +409,7 @@ List = (function(superClass) {
       data.$index = index;
       data.$num = index + 1;
     }
-    item = this._renderer.render(data, true, this);
+    item = this.renderer.render(data, true, this);
     if (item == null) {
       return;
     }
@@ -433,7 +459,7 @@ module.exports = List;
 
 
 
-},{"./events/list_events":1,"./utils/klass":3}],3:[function(require,module,exports){
+},{"./events/list_events":2,"./utils/klass":4}],4:[function(require,module,exports){
 'use strict';
 var Klass;
 
@@ -453,14 +479,405 @@ module.exports = Klass;
 
 
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
+'use strict'
+require('./listable');
+require('./paginated');
+},{"./listable":6,"./paginated":7}],6:[function(require,module,exports){
+'use strict';
+var Base, Core, Scope, _url_rxp, utils,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+Base = pi.controllers.Base;
+
+Core = pi.Core;
+
+utils = pi.utils;
+
+Scope = require('../scope');
+
+_url_rxp = /^(http|\/)/;
+
+Base.Listable = (function(superClass) {
+  extend(Listable, superClass);
+
+  function Listable() {
+    return Listable.__super__.constructor.apply(this, arguments);
+  }
+
+  Listable.mixedin = function(owner) {
+    var options, res, source;
+    options = owner.options.modules.listable;
+    if (typeof options === 'string') {
+      source = options;
+      options = {};
+      if (source.match(_url_rxp)) {
+        options.url = source;
+      } else {
+        options.rest = source;
+      }
+    }
+    if (options.url) {
+      owner.source = options.url;
+      owner.source_type = 'url';
+      owner.source_name = options.name || 'items';
+    } else {
+      if ((res = utils.obj.get_class_path(pi.resources, options.rest))) {
+        owner.source = res;
+        owner.source_type = 'resource';
+        owner.source_name = res.resources_name;
+      }
+    }
+    if (owner.source == null) {
+      throw Error("Undefined source for Listable: " + options);
+    }
+    return owner.scope = new Scope();
+  };
+
+  Listable.prototype.query = function(params) {
+    var prev;
+    if (params == null) {
+      params = {};
+    }
+    if (this._promise == null) {
+      this._promise = utils.promise.resolved();
+    }
+    prev = null;
+    return this._promise = this._promise.then((function(_this) {
+      return function() {
+        prev = _this.scope.set(params);
+        if (_this.scope.is_full === true) {
+          return utils.promise.resolved();
+        } else {
+          return _this.do_query(utils.merge(params, _this.scope.params));
+        }
+      };
+    })(this))["catch"]((function(_this) {
+      return function(e) {
+        if (prev != null) {
+          _this.scope.revert(prev);
+        }
+        delete _this._promise;
+        throw e;
+      };
+    })(this));
+  };
+
+  Listable.prototype.do_query = function(params) {
+    if (this.source_type === 'url') {
+      return pi.Net.get(this.source, params);
+    } else {
+      return this.source.fetch(params);
+    }
+  };
+
+  Listable.prototype.index = function(params) {
+    return this.query(params).then((function(_this) {
+      return function(data) {
+        if (data != null) {
+          _this.view.load(data[_this.source_name]);
+        }
+        return data;
+      };
+    })(this));
+  };
+
+  Listable.prototype.search = function(q) {
+    return this.query({
+      q: q
+    }).then((function(_this) {
+      return function(data) {
+        if (data != null) {
+          _this.view.reload(data[_this.source_name]);
+          _this.view.searched(q);
+        } else {
+          _this.view.search(q);
+        }
+        return data;
+      };
+    })(this));
+  };
+
+  Listable.prototype.sort = function(params) {
+    var sort_params;
+    if (params == null) {
+      params = null;
+    }
+    sort_params = {
+      sort: params
+    };
+    return this.query(sort_params).then((function(_this) {
+      return function(data) {
+        if (data != null) {
+          _this.view.sorted(null);
+          _this.view.reload(data[_this.source_name]);
+          _this.view.sorted(params);
+        } else {
+          _this.view.sort(params);
+        }
+        return data;
+      };
+    })(this));
+  };
+
+  Listable.prototype.filter = function(params) {
+    var filter_params;
+    if (params == null) {
+      params = null;
+    }
+    filter_params = {
+      filter: params
+    };
+    return this.query(filter_params).then((function(_this) {
+      return function(data) {
+        if (data != null) {
+          _this.view.reload(data[_this.source_name]);
+          _this.view.filtered(params);
+        } else {
+          _this.view.filter(params);
+        }
+        return data;
+      };
+    })(this));
+  };
+
+  return Listable;
+
+})(Core);
+
+Scope.rules['q'] = function(prev_q, new_q) {
+  var ref;
+  if (new_q != null) {
+    return prev_q && ((ref = new_q.match(prev_q)) != null ? ref.index : void 0) === 0;
+  } else {
+    return !prev_q;
+  }
+};
+
+module.exports = Base.Listable;
+
+
+
+},{"../scope":8}],7:[function(require,module,exports){
+'use strict';
+var Base, Config, Core, Scope, utils,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+Base = pi.controllers.Base;
+
+Core = pi.Core;
+
+utils = pi.utils;
+
+Config = pi.config;
+
+Scope = require('../scope');
+
+Base.Paginated = (function(superClass) {
+  extend(Paginated, superClass);
+
+  function Paginated() {
+    return Paginated.__super__.constructor.apply(this, arguments);
+  }
+
+  Paginated.mixedin = function(owner) {
+    var options, ref;
+    options = owner.options.modules.paginated || {};
+    owner.per_page = options.per_page || ((ref = Config.paginated) != null ? ref.per_page : void 0) || 20;
+    owner.scope.set({
+      per_page: owner.per_page
+    });
+    return owner.query = utils.func.append(owner.query, (function(promise, args) {
+      var ref1;
+      this._page = ((ref1 = args[0]) != null ? ref1.page : void 0) || 1;
+      return promise.then((function(_this) {
+        return function(data) {
+          if (data != null) {
+            _this.page_resolver(data);
+          }
+          return data;
+        };
+      })(this));
+    }));
+  };
+
+  Paginated.prototype.page_resolver = function(data) {
+    var list;
+    if (((list = data[this.source_name]) != null) && list.length < this.per_page) {
+      return this.scope.full();
+    }
+  };
+
+  Paginated.prototype.next_page = function() {
+    if (this.scope.is_full) {
+      return utils.resolved_promise();
+    }
+    this._page = (this._page || 0) + 1;
+    return this.index({
+      page: this._page
+    });
+  };
+
+  return Paginated;
+
+})(Core);
+
+Scope.blacklist.push('page');
+
+module.exports = Base.Paginated;
+
+
+
+},{"../scope":8}],8:[function(require,module,exports){
+'use strict';
+var Config, Scope, utils,
+  hasProp = {}.hasOwnProperty;
+
+utils = pi.utils;
+
+Config = pi.config;
+
+Scope = (function() {
+  Scope.rules = {};
+
+  Scope.blacklist = [];
+
+  function Scope(blacklist, rules) {
+    if (blacklist == null) {
+      blacklist = [];
+    }
+    if (rules == null) {
+      rules = {};
+    }
+    this.is_full = false;
+    this.blacklist = utils.arr.uniq(this.constructor.blacklist.concat(blacklist));
+    this.rules = utils.merge(rules, this.constructor.rules);
+    this._scope = {};
+    this._prev = {};
+    this.params = {};
+  }
+
+  Scope.prototype._filter_key = function(key) {
+    if (this.blacklist.length) {
+      return this.blacklist.indexOf(key) < 0;
+    }
+    return true;
+  };
+
+  Scope.prototype._check = function(key, val) {
+    if (val === null && (this._scope[key] != null)) {
+      delete this._scope[key];
+      this.is_full = false;
+      return false;
+    }
+    return this._resolve(key, this._scope[key], val);
+  };
+
+  Scope.prototype._resolve = function(key, old_val, val) {
+    var base;
+    if (typeof (base = this.rules)[key] === "function" ? base[key](old_val, val) : void 0) {
+      return true;
+    } else {
+      this.is_full = false;
+      this._scope[key] = val;
+      return false;
+    }
+  };
+
+  Scope.prototype.set = function(params) {
+    var key, ref, ref1, val;
+    if (params == null) {
+      params = {};
+    }
+    this._prev = [utils.clone(this._scope), utils.clone(this.params)];
+    for (key in params) {
+      if (!hasProp.call(params, key)) continue;
+      val = params[key];
+      if (this._filter_key(key)) {
+        this.params[key] = val;
+      }
+    }
+    ref = this.params;
+    for (key in ref) {
+      if (!hasProp.call(ref, key)) continue;
+      val = ref[key];
+      if (this._scope[key] !== val) {
+        if (!this._check(key, val)) {
+          break;
+        }
+      }
+    }
+    if (!this.is_full) {
+      ref1 = this.params;
+      for (key in ref1) {
+        if (!hasProp.call(ref1, key)) continue;
+        val = ref1[key];
+        if (val !== null) {
+          this._scope[key] = val;
+        }
+      }
+    }
+    return this._prev;
+  };
+
+  Scope.prototype.clear = function() {
+    this.params = {};
+    this._scope = {};
+    return this.is_full = false;
+  };
+
+  Scope.prototype.to_s = function() {
+    var _ref, key, ref, val;
+    _ref = [];
+    ref = this._scope;
+    for (key in ref) {
+      val = ref[key];
+      _ref.push(key + "=" + val);
+    }
+    return _ref.join("&");
+  };
+
+  Scope.prototype.full = function() {
+    utils.debug("Scope is full: " + (this.to_s()));
+    return this.is_full = true;
+  };
+
+  Scope.prototype.reload = function() {
+    utils.debug("Scope should be reloaded: " + (this.to_s()));
+    return this.is_full = false;
+  };
+
+  Scope.prototype.revert = function(to) {
+    if (to == null) {
+      to = this._prev;
+    }
+    this._scope = utils.clone(to[0]);
+    return this.params = utils.clone(to[1]);
+  };
+
+  return Scope;
+
+})();
+
+module.exports = Scope;
+
+
+
+},{}],9:[function(require,module,exports){
 'use strict'
 var pi = window.pi;
 pi.components.List = require('./components/list');
+// load plugins before active_list !!! (otherwise they will be not available from it)
 require('./plugins/list');
+pi.components.ActiveList = require('./components/active_list');
+pi.controllers.Scope = require('./controllers/scope');
+require('./controllers/modules');
+require('./views/modules');
 module.exports = pi.components.List;
 
-},{"./components/list":2,"./plugins/list":6}],5:[function(require,module,exports){
+},{"./components/active_list":1,"./components/list":3,"./controllers/modules":5,"./controllers/scope":8,"./plugins/list":11,"./views/modules":18}],10:[function(require,module,exports){
 'use strict';
 var Klass, List, ListEvent, Plugin, _is_continuation, utils,
   hasProp = {}.hasOwnProperty,
@@ -497,17 +914,16 @@ List.Filterable = (function(superClass) {
 
   Filterable.prototype.id = 'filterable';
 
-  Filterable.prototype.initialize = function(list) {
-    this.list = list;
+  Filterable.prototype.initialize = function() {
     Filterable.__super__.initialize.apply(this, arguments);
-    this.list.delegate_to(this, 'filter');
-    this.list.on(ListEvent.Update, ((function(_this) {
+    this.target.delegate_to(this, 'filter');
+    this.target.on(ListEvent.Update, ((function(_this) {
       return function(e) {
         return _this.item_updated(e.data.item);
       };
     })(this)), this, (function(_this) {
       return function(e) {
-        return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
+        return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.target;
       };
     })(this));
     return this;
@@ -523,7 +939,7 @@ List.Filterable = (function(superClass) {
     if (this.matcher(item)) {
       return;
     } else if (this.filtered) {
-      this.list.remove_item(item, true, false);
+      this.target.remove_item(item, true, false);
     }
     return false;
   };
@@ -539,8 +955,8 @@ List.Filterable = (function(superClass) {
       return;
     }
     this.filtered = true;
-    this.list.addClass(Klass.FILTERED);
-    this._all_items = this.list.items.slice();
+    this.target.addClass(Klass.FILTERED);
+    this._all_items = this.target.items.slice();
     return this._prevf = {};
   };
 
@@ -552,13 +968,13 @@ List.Filterable = (function(superClass) {
       return;
     }
     this.filtered = false;
-    this.list.removeClass(Klass.FILTERED);
+    this.target.removeClass(Klass.FILTERED);
     if (rollback) {
-      this.list.data_provider(this.all_items(), false, false);
+      this.target.data_provider(this.all_items(), false, false);
     }
     this._all_items = null;
     this.matcher = null;
-    return this.list.trigger(ListEvent.Filtered, false);
+    return this.target.trigger(ListEvent.Filtered, false);
   };
 
   Filterable.prototype.filter = function(params) {
@@ -569,7 +985,7 @@ List.Filterable = (function(superClass) {
     if (!this.filtered) {
       this.start_filter();
     }
-    scope = _is_continuation(this._prevf, params) ? this.list.items.slice() : this.all_items();
+    scope = _is_continuation(this._prevf, params) ? this.target.items.slice() : this.all_items();
     this._prevf = params;
     this.matcher = utils.matchers.object_ext({
       record: params
@@ -585,8 +1001,8 @@ List.Filterable = (function(superClass) {
       }
       return results;
     }).call(this);
-    this.list.data_provider(_buffer, false, false);
-    return this.list.trigger(ListEvent.Filtered, true);
+    this.target.data_provider(_buffer, false, false);
+    return this.target.trigger(ListEvent.Filtered, true);
   };
 
   return Filterable;
@@ -597,7 +1013,7 @@ module.exports = List.Filterable;
 
 
 
-},{"../../components/events/list_events":1,"../../components/list":2,"../../components/utils/klass":3}],6:[function(require,module,exports){
+},{"../../components/events/list_events":2,"../../components/list":3,"../../components/utils/klass":4}],11:[function(require,module,exports){
 'use strict'
 require('./selectable');
 require('./sortable');
@@ -607,7 +1023,7 @@ require('./scrollend');
 require('./nested_select');
 require('./restful');
 
-},{"./filterable":5,"./nested_select":7,"./restful":8,"./scrollend":9,"./searchable":10,"./selectable":11,"./sortable":12}],7:[function(require,module,exports){
+},{"./filterable":10,"./nested_select":12,"./restful":13,"./scrollend":14,"./searchable":15,"./selectable":16,"./sortable":17}],12:[function(require,module,exports){
 'use strict';
 var Klass, List, ListEvent, Nod, Plugin, Selectable, utils,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -636,11 +1052,10 @@ List.NestedSelect = (function(superClass) {
 
   NestedSelect.prototype.id = 'nested_select';
 
-  NestedSelect.prototype.initialize = function(list) {
-    this.list = list;
+  NestedSelect.prototype.initialize = function() {
     Plugin.prototype.initialize.apply(this, arguments);
-    this.nested_klass = this.list.options.nested_klass || Klass.NESTED_LIST;
-    this.selectable = this.list.selectable || {
+    this.nested_klass = this.options.klass || Klass.NESTED_LIST;
+    this.selectable = this.target.selectable || {
       select_all: utils.pass,
       clear_selection: utils.pass,
       type: utils.pass,
@@ -648,27 +1063,24 @@ List.NestedSelect = (function(superClass) {
       enable: utils.pass,
       disable: utils.pass
     };
-    this.list.delegate_to(this, 'clear_selection', 'select_all', 'selected', 'where', 'select_item', 'deselect_item');
-    if (this.list.has_selectable !== true) {
-      this.list.delegate_to(this, 'selected_records', 'selected_record', 'selected_item', 'selected_size');
+    this.target.delegate_to(this, 'clear_selection', 'select_all', 'selected', 'where', 'select_item', 'deselect_item');
+    if (this.target.has_selectable !== true) {
+      this.target.delegate_to(this, 'selected_records', 'selected_record', 'selected_item', 'selected_size');
     }
     this.enabled = true;
-    if (this.list.options.no_select != null) {
-      this.disable();
-    }
-    this.type(this.list.options.nested_select_type || "");
-    this.list.on([ListEvent.Selected, ListEvent.SelectionCleared], (function(_this) {
+    this.type(this.options.type || "");
+    this.target.on([ListEvent.Selected, ListEvent.SelectionCleared], (function(_this) {
       return function(e) {
         var item;
         if (_this._watching_radio && e.type === ListEvent.Selected) {
-          if (e.target === _this.list) {
+          if (e.target === _this.target) {
             item = _this.selectable._selected_item;
           } else {
             item = e.data[0].host.selectable._selected_item;
           }
           _this.update_radio_selection(item);
         }
-        if (e.target !== _this.list) {
+        if (e.target !== _this.target) {
           e.cancel();
           return _this._check_selected();
         } else {
@@ -684,7 +1096,7 @@ List.NestedSelect = (function(superClass) {
     if (!this.enabled) {
       this.enabled = true;
       this.selectable.enable();
-      ref1 = this.list.find_cut("." + this.nested_klass);
+      ref1 = this.target.find_cut("." + this.nested_klass);
       results = [];
       for (i = 0, len = ref1.length; i < len; i++) {
         item = ref1[i];
@@ -699,7 +1111,7 @@ List.NestedSelect = (function(superClass) {
     if (this.enabled) {
       this.enabled = false;
       this.selectable.disable();
-      ref1 = this.list.find_cut("." + this.nested_klass);
+      ref1 = this.target.find_cut("." + this.nested_klass);
       results = [];
       for (i = 0, len = ref1.length; i < len; i++) {
         item = ref1[i];
@@ -746,8 +1158,8 @@ List.NestedSelect = (function(superClass) {
 
   NestedSelect.prototype.where = function(query) {
     var i, item, len, nod, ref, ref1;
-    ref = List.prototype.where.call(this.list, query);
-    ref1 = this.list.find_cut("." + this.nested_klass);
+    ref = List.prototype.where.call(this.target, query);
+    ref1 = this.target.find_cut("." + this.nested_klass);
     for (i = 0, len = ref1.length; i < len; i++) {
       item = ref1[i];
       if ((nod = Nod.fetch(item._nod))) {
@@ -779,8 +1191,8 @@ List.NestedSelect = (function(superClass) {
       return;
     }
     this._prev_selected_list = item.host;
-    if (this.list.selected().length > 1) {
-      this.list.clear_selection(true);
+    if (this.target.selected().length > 1) {
+      this.target.clear_selection(true);
       item.host.select_item(item);
     }
   };
@@ -794,7 +1206,7 @@ List.NestedSelect = (function(superClass) {
       force = false;
     }
     this.selectable.clear_selection(silent, force);
-    ref1 = this.list.find_cut("." + this.nested_klass);
+    ref1 = this.target.find_cut("." + this.nested_klass);
     for (i = 0, len = ref1.length; i < len; i++) {
       item = ref1[i];
       if ((ref2 = Nod.fetch(item._nod)) != null) {
@@ -804,7 +1216,7 @@ List.NestedSelect = (function(superClass) {
       }
     }
     if (!silent) {
-      return this.list.trigger(ListEvent.SelectionCleared);
+      return this.target.trigger(ListEvent.SelectionCleared);
     }
   };
 
@@ -817,7 +1229,7 @@ List.NestedSelect = (function(superClass) {
       force = false;
     }
     this.selectable.select_all(true, force);
-    ref1 = this.list.find_cut("." + this.nested_klass);
+    ref1 = this.target.find_cut("." + this.nested_klass);
     for (i = 0, len = ref1.length; i < len; i++) {
       item = ref1[i];
       if ((ref2 = Nod.fetch(item._nod)) != null) {
@@ -829,7 +1241,7 @@ List.NestedSelect = (function(superClass) {
     if (!silent) {
       _selected = this.selected();
       if (_selected.length) {
-        return this.list.trigger(ListEvent.Selected, _selected);
+        return this.target.trigger(ListEvent.Selected, _selected);
       }
     }
   };
@@ -837,7 +1249,7 @@ List.NestedSelect = (function(superClass) {
   NestedSelect.prototype.selected = function() {
     var _selected, i, item, j, len, len1, ref1, ref2, sublist, sublists;
     _selected = [];
-    ref1 = this.list.items;
+    ref1 = this.target.items;
     for (i = 0, len = ref1.length; i < len; i++) {
       item = ref1[i];
       if (item.__selected__) {
@@ -863,7 +1275,7 @@ module.exports = List.NestedSelect;
 
 
 
-},{"../../components/events/list_events":1,"../../components/list":2,"../../components/utils/klass":3,"./selectable":11}],8:[function(require,module,exports){
+},{"../../components/events/list_events":2,"../../components/list":3,"../../components/utils/klass":4,"./selectable":16}],13:[function(require,module,exports){
 'use strict';
 var Compiler, Events, Klass, List, ListEvent, Plugin, utils,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -892,24 +1304,22 @@ List.Restful = (function(superClass) {
 
   Restful.prototype.id = 'restful';
 
-  Restful.prototype.initialize = function(list) {
+  Restful.prototype.initialize = function() {
     var resources, rest;
-    this.list = list;
     Restful.__super__.initialize.apply(this, arguments);
+    this.target.renderer;
     this.items_by_id = {};
-    this.listen_load = this.list.options.listen_load === true;
-    this.listen_create = this.list.options.listen_create != null ? this.list.options.listen_create : this.listen_load;
-    if ((rest = this.list.options.rest) != null) {
-      if (!(rest.indexOf(".") > 0)) {
+    this.options.load = this.options.load === true;
+    this.options.create = this.options.create != null ? this.options.create : this.options.load;
+    if ((rest = this.options.rest) != null) {
+      if (rest.match(/^[a-z\_]+$/i)) {
         rest = utils.camelCase(rest);
       }
       resources = Compiler.str_to_fun(rest).call();
     }
-    if (resources != null) {
-      this.bind(resources, this.list.options.load_rest, this.scope);
-    }
-    this.list.delegate_to(this, 'find_by_id');
-    this.list.on(Events.Destroyed, (function(_this) {
+    this.bind(resources);
+    this.target.delegate_to(this, 'find_by_id');
+    this.target.on(Events.Destroyed, (function(_this) {
       return function() {
         _this.bind(null);
         return false;
@@ -920,7 +1330,7 @@ List.Restful = (function(superClass) {
 
   Restful.prototype.bind = function(resources, load) {
     if (load == null) {
-      load = false;
+      load = true;
     }
     if (this.resources) {
       this.resources.off(this.resource_update());
@@ -928,8 +1338,8 @@ List.Restful = (function(superClass) {
     this.resources = resources;
     if (this.resources == null) {
       this.items_by_id = {};
-      if (!this.list._disposed) {
-        this.list.clear();
+      if (!this.target._disposed) {
+        this.target.clear();
       }
       return;
     }
@@ -941,12 +1351,12 @@ List.Restful = (function(superClass) {
 
   Restful.prototype.find_by_id = function(id) {
     var items;
-    if (this.listen_load) {
+    if (this.options.load) {
       if (this.items_by_id[id] != null) {
         return this.items_by_id[id];
       }
     }
-    items = this.list.where({
+    items = this.target.where({
       record: {
         id: id
       }
@@ -960,11 +1370,11 @@ List.Restful = (function(superClass) {
     var i, item, len;
     for (i = 0, len = data.length; i < len; i++) {
       item = data[i];
-      if (!(this.items_by_id[item.id] && this.listen_load)) {
-        this.items_by_id[item.id] = this.list.add_item(item, true);
+      if (!(this.items_by_id[item.id] && this.options.load)) {
+        this.items_by_id[item.id] = this.target.add_item(item, true);
       }
     }
-    return this.list.update(ListEvent.Load);
+    return this.target.update(ListEvent.Load);
   };
 
   Restful.prototype.resource_update = function(e) {
@@ -976,7 +1386,7 @@ List.Restful = (function(superClass) {
   Restful.event_handler('resource_update');
 
   Restful.prototype.on_load = function() {
-    if (!this.listen_load) {
+    if (!this.options.load) {
       return;
     }
     return this.load(this.resources.all());
@@ -984,22 +1394,22 @@ List.Restful = (function(superClass) {
 
   Restful.prototype.on_create = function(data) {
     var item;
-    if (!this.listen_create) {
+    if (!this.options.create) {
       return;
     }
     if (!this.find_by_id(data.id)) {
-      return this.items_by_id[data.id] = this.list.add_item(data);
+      return this.items_by_id[data.id] = this.target.add_item(data);
     } else if (data.__tid__ && (item = this.find_by_id(data.__tid__))) {
       delete this.items_by_id[data.__tid__];
       this.items_by_id[data.id] = item;
-      return this.list.update_item(item, data);
+      return this.target.update_item(item, data);
     }
   };
 
   Restful.prototype.on_destroy = function(data) {
     var item;
     if ((item = this.find_by_id(data.id))) {
-      this.list.remove_item(item);
+      this.target.remove_item(item);
       delete this.items_by_id[data.id];
     }
   };
@@ -1007,12 +1417,12 @@ List.Restful = (function(superClass) {
   Restful.prototype.on_update = function(data) {
     var item;
     if ((item = this.find_by_id(data.id))) {
-      return this.list.update_item(item, data);
+      return this.target.update_item(item, data);
     }
   };
 
   Restful.prototype.dispose = function() {
-    this.items_by_id = {};
+    this.items_by_id = null;
     if (this.resources != null) {
       return this.resources.off(this.resource_update());
     }
@@ -1026,7 +1436,7 @@ module.exports = List.Restful;
 
 
 
-},{"../../components/events/list_events":1,"../../components/list":2,"../../components/utils/klass":3}],9:[function(require,module,exports){
+},{"../../components/events/list_events":2,"../../components/list":3,"../../components/utils/klass":4}],14:[function(require,module,exports){
 'use strict';
 var Klass, List, ListEvent, Nod, Plugin, utils,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -1116,7 +1526,7 @@ module.exports = List.ScrollEnd;
 
 
 
-},{"../../components/events/list_events":1,"../../components/list":2,"../../components/utils/klass":3}],10:[function(require,module,exports){
+},{"../../components/events/list_events":2,"../../components/list":3,"../../components/utils/klass":4}],15:[function(require,module,exports){
 'use strict';
 var Klass, List, ListEvent, Nod, Plugin, _clear_mark_regexp, _is_continuation, _selector_regexp, utils,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -1339,7 +1749,7 @@ module.exports = List.Searchable;
 
 
 
-},{"../../components/events/list_events":1,"../../components/list":2,"../../components/utils/klass":3}],11:[function(require,module,exports){
+},{"../../components/events/list_events":2,"../../components/list":3,"../../components/utils/klass":4}],16:[function(require,module,exports){
 'use strict';
 var Klass, List, ListEvent, Nod, Plugin, utils,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -1366,24 +1776,21 @@ List.Selectable = (function(superClass) {
 
   Selectable.prototype.id = 'selectable';
 
-  Selectable.prototype.initialize = function(list) {
+  Selectable.prototype.initialize = function() {
     var i, item, len, ref;
-    this.list = list;
     Selectable.__super__.initialize.apply(this, arguments);
-    this.list.merge_classes.push(Klass.SELECTED);
-    this.type(this.list.options.select_type || 'radio');
-    if (this.list.options.no_select == null) {
-      this.enable();
-    }
-    ref = this.list.items;
+    this.target.merge_classes.push(Klass.SELECTED);
+    this.type(this.options.type || 'radio');
+    this.enable();
+    ref = this.target.items;
     for (i = 0, len = ref.length; i < len; i++) {
       item = ref[i];
       if (item.hasClass(Klass.SELECTED)) {
         item.__selected__ = true;
       }
     }
-    this.list.delegate_to(this, 'clear_selection', 'selected', 'selected_item', 'select_all', 'select_item', 'selected_records', 'selected_record', 'deselect_item', 'toggle_select', 'selected_size');
-    this.list.on(ListEvent.Update, ((function(_this) {
+    this.target.delegate_to(this, 'clear_selection', 'selected', 'selected_item', 'select_all', 'select_item', 'selected_records', 'selected_record', 'deselect_item', 'toggle_select', 'selected_size');
+    this.target.on(ListEvent.Update, ((function(_this) {
       return function(e) {
         _this._selected = null;
         _this._check_selected();
@@ -1398,14 +1805,14 @@ List.Selectable = (function(superClass) {
   Selectable.prototype.enable = function() {
     if (!this.enabled) {
       this.enabled = true;
-      return this.list.on(ListEvent.ItemClick, this.item_click_handler());
+      return this.target.on(ListEvent.ItemClick, this.item_click_handler());
     }
   };
 
   Selectable.prototype.disable = function() {
     if (this.enabled) {
       this.enabled = false;
-      return this.list.off(ListEvent.ItemClick, this.item_click_handler());
+      return this.target.off(ListEvent.ItemClick, this.item_click_handler());
     }
   };
 
@@ -1415,7 +1822,7 @@ List.Selectable = (function(superClass) {
   };
 
   Selectable.prototype.item_click_handler = function(e) {
-    this.list.toggle_select(e.data.item, true);
+    this.target.toggle_select(e.data.item, true);
     if (e.data.item.enabled) {
       this._check_selected();
     }
@@ -1424,10 +1831,10 @@ List.Selectable = (function(superClass) {
   Selectable.event_handler('item_click_handler');
 
   Selectable.prototype._check_selected = function() {
-    if (this.list.selected().length) {
-      return this.list.trigger(ListEvent.Selected, this.list.selected());
+    if (this.target.selected().length) {
+      return this.target.trigger(ListEvent.Selected, this.target.selected());
     } else {
-      return this.list.trigger(ListEvent.SelectionCleared);
+      return this.target.trigger(ListEvent.SelectionCleared);
     }
   };
 
@@ -1476,7 +1883,7 @@ List.Selectable = (function(superClass) {
     if (force == null) {
       force = false;
     }
-    ref = this.list.items;
+    ref = this.target.items;
     for (i = 0, len = ref.length; i < len; i++) {
       item = ref[i];
       if (item.enabled || force) {
@@ -1484,7 +1891,7 @@ List.Selectable = (function(superClass) {
       }
     }
     if (!silent) {
-      return this.list.trigger(ListEvent.SelectionCleared);
+      return this.target.trigger(ListEvent.SelectionCleared);
     }
   };
 
@@ -1496,7 +1903,7 @@ List.Selectable = (function(superClass) {
     if (force == null) {
       force = false;
     }
-    ref = this.list.items;
+    ref = this.target.items;
     for (i = 0, len = ref.length; i < len; i++) {
       item = ref[i];
       if (item.enabled || force) {
@@ -1504,13 +1911,13 @@ List.Selectable = (function(superClass) {
       }
     }
     if (this.selected().length && !silent) {
-      return this.list.trigger(ListEvent.Selected, this.selected());
+      return this.target.trigger(ListEvent.Selected, this.selected());
     }
   };
 
   Selectable.prototype.selected = function() {
     if (this._selected == null) {
-      this._selected = this.list.where({
+      this._selected = this.target.where({
         __selected__: true
       });
     }
@@ -1519,7 +1926,7 @@ List.Selectable = (function(superClass) {
 
   Selectable.prototype.selected_item = function() {
     var _ref;
-    _ref = this.list.selected();
+    _ref = this.target.selected();
     if (_ref.length) {
       return _ref[0];
     } else {
@@ -1528,14 +1935,14 @@ List.Selectable = (function(superClass) {
   };
 
   Selectable.prototype.selected_records = function() {
-    return this.list.selected().map(function(item) {
+    return this.target.selected().map(function(item) {
       return item.record;
     });
   };
 
   Selectable.prototype.selected_record = function() {
     var _ref;
-    _ref = this.list.selected_records();
+    _ref = this.target.selected_records();
     if (_ref.length) {
       return _ref[0];
     } else {
@@ -1544,7 +1951,7 @@ List.Selectable = (function(superClass) {
   };
 
   Selectable.prototype.selected_size = function() {
-    return this.list.selected().length;
+    return this.target.selected().length;
   };
 
   return Selectable;
@@ -1555,7 +1962,7 @@ module.exports = List.Selectable;
 
 
 
-},{"../../components/events/list_events":1,"../../components/list":2,"../../components/utils/klass":3}],12:[function(require,module,exports){
+},{"../../components/events/list_events":2,"../../components/list":3,"../../components/utils/klass":4}],17:[function(require,module,exports){
 'use strict';
 var List, ListEvent, Plugin, utils,
   extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
@@ -1578,13 +1985,12 @@ List.Sortable = (function(superClass) {
 
   Sortable.prototype.id = 'sortable';
 
-  Sortable.prototype.initialize = function(list) {
+  Sortable.prototype.initialize = function() {
     var fn, j, len, param, ref;
-    this.list = list;
     Sortable.__super__.initialize.apply(this, arguments);
-    if (this.list.options.sort != null) {
+    if (this.options.param != null) {
       this._prevs = [];
-      ref = this.list.options.sort.split(",");
+      ref = this.options.param.split(",");
       fn = (function(_this) {
         return function(param) {
           var data, key, order, ref1;
@@ -1602,23 +2008,23 @@ List.Sortable = (function(superClass) {
         return utils.keys_compare(a.record, b.record, this._prevs);
       };
     }
-    this.list.delegate_to(this, 'sort');
-    this.list.on(ListEvent.Update, ((function(_this) {
+    this.target.delegate_to(this, 'sort');
+    this.target.on(ListEvent.Update, ((function(_this) {
       return function(e) {
         return _this.item_updated(e.data.item);
       };
     })(this)), this, (function(_this) {
       return function(e) {
-        return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.list;
+        return (e.data.type === ListEvent.ItemAdded || e.data.type === ListEvent.ItemUpdated) && e.data.item.host === _this.target;
       };
     })(this));
-    this.list.on(ListEvent.Update, ((function(_this) {
+    this.target.on(ListEvent.Update, ((function(_this) {
       return function(e) {
         return _this.resort();
       };
     })(this)), this, (function(_this) {
       return function(e) {
-        return (e.data.type === ListEvent.Load) && e.target === _this.list;
+        return (e.data.type === ListEvent.Load) && e.target === _this.target;
       };
     })(this));
     return this;
@@ -1628,22 +2034,22 @@ List.Sortable = (function(superClass) {
     if (!this._compare_fun) {
       return false;
     }
-    this._bisect_sort(item, 0, this.list.size() - 1);
+    this._bisect_sort(item, 0, this.target.size - 1);
     return false;
   };
 
   Sortable.prototype._bisect_sort = function(item, left, right) {
     var a, i;
     if (right - left < 2) {
-      if (this._compare_fun(item, this.list.items[left]) > 0) {
-        this.list.move_item(item, right);
+      if (this._compare_fun(item, this.target.items[left]) > 0) {
+        this.target.move_item(item, right);
       } else {
-        this.list.move_item(item, left);
+        this.target.move_item(item, left);
       }
       return;
     }
     i = (left + (right - left) / 2) | 0;
-    a = this.list.items[i];
+    a = this.target.items[i];
     if (this._compare_fun(item, a) > 0) {
       left = i;
     } else {
@@ -1660,8 +2066,8 @@ List.Sortable = (function(superClass) {
     if (!this._compare_fun) {
       return false;
     }
-    this.list.items.sort(this._compare_fun);
-    return this.list.data_provider(this.list.items.slice(), true, false);
+    this.target.items.sort(this._compare_fun);
+    return this.target.data_provider(this.target.items.slice(), true, false);
   };
 
   Sortable.prototype.sort = function(sort_params) {
@@ -1673,9 +2079,9 @@ List.Sortable = (function(superClass) {
     this._compare_fun = function(a, b) {
       return utils.keys_compare(a.record, b.record, sort_params);
     };
-    this.list.items.sort(this._compare_fun);
-    this.list.data_provider(this.list.items.slice(), true, false);
-    return this.list.trigger(ListEvent.Sorted, sort_params);
+    this.target.items.sort(this._compare_fun);
+    this.target.data_provider(this.target.items.slice(), true, false);
+    return this.target.trigger(ListEvent.Sorted, sort_params);
   };
 
   Sortable.prototype.sorted = function(sort_params) {
@@ -1687,7 +2093,7 @@ List.Sortable = (function(superClass) {
     this._compare_fun = function(a, b) {
       return utils.keys_compare(a.record, b.record, sort_params);
     };
-    return this.list.trigger(ListEvent.Sorted, sort_params);
+    return this.target.trigger(ListEvent.Sorted, sort_params);
   };
 
   return Sortable;
@@ -1698,4 +2104,100 @@ module.exports = List.Sortable;
 
 
 
-},{"../../components/events/list_events":1,"../../components/list":2}]},{},[4]);
+},{"../../components/events/list_events":2,"../../components/list":3}],18:[function(require,module,exports){
+'use strict'
+require('./listable');
+},{"./listable":19}],19:[function(require,module,exports){
+'use strict';
+var Base, Core, utils,
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+Base = pi.views.Base;
+
+Core = pi.Core;
+
+utils = pi.utils;
+
+Base.Listable = (function(superClass) {
+  extend(Listable, superClass);
+
+  function Listable() {
+    return Listable.__super__.constructor.apply(this, arguments);
+  }
+
+  Listable.mixedin = function(owner) {
+    if (owner.list == null) {
+      throw Error('List component is missing');
+    }
+    return Listable.__super__.constructor.mixedin.apply(this, arguments);
+  };
+
+  Listable.prototype.load = function(data) {
+    var i, item, len;
+    for (i = 0, len = data.length; i < len; i++) {
+      item = data[i];
+      this.list.add_item(item, true);
+    }
+    return this.list.update();
+  };
+
+  Listable.prototype.reload = function(data) {
+    this.list.data_provider(data);
+    if (this._query) {
+      return this.searched(this._query);
+    }
+  };
+
+  Listable.prototype.sort = function(params) {
+    return this.list.sort(params);
+  };
+
+  Listable.prototype.sorted = function(params) {
+    this.list.sortable.clear();
+    if (params != null) {
+      return this.list.sortable.sorted(params);
+    }
+  };
+
+  Listable.prototype.search = function(query) {
+    this._query = query;
+    return this.list.search(query, true);
+  };
+
+  Listable.prototype.searched = function(query) {
+    this._query = query;
+    this.list.searchable.start_search();
+    this.list.highlight(query);
+    if (!query) {
+      return this.list.searchable.stop_search(false);
+    }
+  };
+
+  Listable.prototype.filter = function(data) {
+    return this.list.filter(data);
+  };
+
+  Listable.prototype.filtered = function(data) {
+    this.list.filterable.start_filter();
+    if (data != null) {
+      return this.list.trigger('filter_update');
+    } else {
+      return this.list.filterable.stop_filter(false);
+    }
+  };
+
+  Listable.prototype.clear = function(data) {
+    var ref;
+    this.list.clear();
+    this.list.clear_selection() != null;
+    return (ref = this.list.scroll_end) != null ? ref.disable() : void 0;
+  };
+
+  return Listable;
+
+})(Core);
+
+
+
+},{}]},{},[9]);

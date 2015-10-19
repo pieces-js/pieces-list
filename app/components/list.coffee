@@ -139,24 +139,26 @@ class List extends Base
     # update associated record
     utils.extend item.record, new_item.record, true
 
-    # remove_children
-    item.remove_children()
+    item._with_raf('list:data', =>
+      # remove_children
+      item.remove_children()
 
-    # update HTML
-    item.html new_item.html()
+      # update HTML
+      item.html new_item.html()
 
-    #try to remove runtime classes
-    for klass in item.node.className.split(/\s+/)
-      item.removeClass(klass) if klass and !(klass in @merge_classes)
-    #merge classes
-    item.mergeClasses new_item
-    
-    # piecify ...
-    item.piecify()
-    # ... and postinitialize (because DOM was updated)
-    item.postinitialize()
+      #try to remove runtime classes
+      for klass in item.node.className.split(/\s+/)
+        item.removeClass(klass) if klass and !(klass in @merge_classes)
+      #merge classes
+      item.mergeClasses new_item
+      
+      # piecify ...
+      item.piecify()
+      # ... and postinitialize (because DOM was updated)
+      item.postinitialize()
 
-    @trigger(ListEvent.Update, {type: ListEvent.ItemUpdated, item: item}) unless silent
+      @trigger(ListEvent.Update, {type: ListEvent.ItemUpdated, item: item}) unless silent
+    )
     item  
 
   move_item: (item, index) ->
